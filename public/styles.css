@@ -1,0 +1,400 @@
+/* General */
+body {
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f4f9;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    flex-direction: column;
+    margin: 0 auto;
+    padding: 20px;
+
+}
+
+/* Contenedor principal */
+.login-container {
+    display: flex;
+    width: 70%;
+    height: 500px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* Sección izquierda */
+.info-section {
+    flex: 1;
+    background: url('nature.jpg') center center/cover no-repeat;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+    
+}
+
+
+.info-section h1 {
+    font-size: 32px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.info-section p {
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+.signup-button {
+    background-color: rgb(99, 143, 232);
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+.signup-button:hover {
+    background-color: rgb(79, 123, 212);
+}
+
+/* Sección derecha */
+.form-section {
+    flex: 1;
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.logo {
+    width: 50px;
+    height: auto; /* Mantiene las proporciones de la imagen */
+    margin-bottom: 20px;
+}
+
+h2 {
+    color: rgb(99, 143, 232);
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.input-group {
+    width: 80%; /* Reduce el ancho para una mejor apariencia */
+    margin-bottom: 20px; /* Espaciado entre campos */
+    text-align: left; /* Alinea las etiquetas a la izquierda */
+}
+
+.input-group label {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 5px;
+    display: block;
+}
+
+.input-group input {
+    width: 100%; /* Los campos ocupan todo el contenedor */
+    padding: 10px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+.login-button {
+    background-color: rgb(99, 143, 232);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    font-size: 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    margin-top: 10px;
+    width: 100%;
+    transition: background-color 0.3s;
+}
+
+.login-button:hover {
+    background-color: rgb(79, 123, 212);
+}
+
+.footer-text {
+    margin-top: 10px;
+    font-size: 14px;
+}
+
+.footer-text a {
+    color: rgb(99, 143, 232);
+    text-decoration: none;
+}
+
+.footer-text a:hover {
+    text-decoration: underline;
+}
+
+form {
+    width: 100%; /* Ocupa todo el espacio disponible */
+    max-width: 300px; /* Limita el ancho máximo */
+}
+
+/* .sidebar {
+    background-color: #3b3b3b;
+    color: #fff;
+    width: 250px;
+    height: 100%;
+    position: fixed;
+    left: 0;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 20px;
+} */
+
+
+.logo-img {
+    max-width: 100%;
+    height: auto;
+}
+
+.menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.menu > li {
+    position: relative; /* Necesario para posicionar los submenús */
+    margin-bottom: 5px;
+}
+
+.menu a {
+    display: block;
+    padding: 15px;
+    color: #fff;
+    text-decoration: none;
+    text-align: center;
+    background: #4d25ec;
+    transition: background 0.3s;
+}
+
+/* .menu li a {
+    text-decoration: none;
+    color: white;
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    border-radius: 5px;
+    transition: background 0.3s ease;
+} */
+.menu > li > a {
+    text-decoration: none;
+    color: white;
+    background: #444;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    border-radius: 5px;
+    transition: background 0.3s ease;
+}
+
+/* .menu li a:hover {
+    background: #4d25ec;
+} */
+
+.menu > li > a:hover {
+    background: #4d25ec;
+}
+
+.menu li a i {
+    font-size: 20px; /* Tamaño del ícono */
+    margin-right: 10px;
+}
+
+.menu a:hover {
+    background: #4d25ec;
+}
+
+.menu-text {
+    transition: opacity 0.3s ease, width 0.3s ease;
+}
+
+/* Submenús */
+.submenu {
+    list-style: none;
+    padding: 0;
+    padding-left: 30px;
+    margin: 0;
+    display: none; /* Submenús están ocultos inicialmente */
+    position: relative; /* Posiciona el submenú relativo al menú principal */
+    top: 100%; /* Asegura que aparezca debajo del menú principal */
+    left: 0px; /* Alinéalo al inicio del menú principal */
+    z-index: 1000; /* Asegura que esté sobre otros elementos */
+}
+
+.submenu li {
+    margin-top: 5px;
+}
+
+.submenu li a {
+    text-decoration: none;
+    color: white;
+    background: #555;
+    padding: 10px 15px;
+    display: block;
+    border-radius: 5px;
+    transition: background 0.3s ease;
+}
+
+.submenu li a:hover {
+    background: #666;
+}
+
+/* Mostrar el submenú al pasar el cursor */
+.menu li:hover > .submenu {
+    display: block; /* Muestra el submenú */
+}
+
+.menu li:hover .submenu li {
+    margin-top: 5px;
+}
+
+.content {
+    margin-left: 250px; /* Espacio reservado para el sidebar visible */
+    padding: 20px;
+    transition: margin-left 0.3s ease, width 0.3s ease;
+    width: calc(100% - 250px); /* Ajuste del ancho considerando el sidebar */
+    text-align: center;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.content.full-width {
+    margin-left: 0; /* Elimina el margen cuando el sidebar está oculto */
+    width: 100%; /* La sección ocupa todo el ancho disponible */
+}
+
+#username-placeholder {
+    color: #99e4e8; /* Para un toque más dinámico */
+}
+
+img.logo-img {
+    max-width: 150px;
+    margin-bottom: 20px;
+}
+
+/* Estilos del Sidebar */
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 250px;
+    height: 100%;
+    background-color: #638fe8;
+    color: white;
+    padding-top: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    transition: transform 0.3s ease;
+}
+
+.sidebar.hidden {
+    transform: translateX(-250px); /* Ocultar el menú al moverlo fuera de la pantalla */
+}
+
+.sidebar .profile-info {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.sidebar .profile-img {
+    width: 60px;
+    border-radius: 50%;
+}
+
+.sidebar .menu {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    flex-grow: 1;
+}
+
+.sidebar .menu li {
+    width: 100%;
+    margin: 0;
+}
+
+/* .sidebar .menu li a {
+    color: white;
+    text-decoration: none;
+    display: block;
+    
+} */
+
+.sidebar .menu li a {
+    display: block;
+    padding: 10px;  /* Ajustado para juntar los botones */
+    color: white;
+    text-decoration: none;
+    background-color: #638fe8;  /* Color de fondo de los botones */
+    text-align: left;
+    border-radius: 0;  /* Sin bordes redondeados entre los botones */
+    transition: background-color 0.3s ease;
+    border-bottom: none;
+}
+
+.sidebar .menu li a:hover {
+    background-color: #3a75eb;  /* Color al pasar el mouse sobre el botón */
+}
+
+/* Botón para alternar el menú */
+.menu-toggle {
+    font-size: 30px;
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    cursor: pointer;
+    z-index: 100;
+}
+
+/* Responsividad */
+@media (max-width: 768px) {
+    .content {
+        margin-left: 0;
+    }
+    .sidebar {
+        width: 60px;
+    }
+    .menu-text {
+        display: none; /* Oculta el texto del menú */
+    }
+
+    .menu li a {
+        padding: 10px 10px;
+    }
+
+    .menu li a i {
+        margin-right: 0; /* Elimina el espacio a la derecha del ícono */
+    }
+    .submenu {
+        position: static; /* Colocar submenús en flujo normal */
+        padding-left: 30px; /* Más sangría en móviles */
+    }
+
+    .submenu li a {
+        padding: 10px 15px;
+    }
+}
+
