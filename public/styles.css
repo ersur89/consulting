@@ -140,9 +140,9 @@ h2 {
     text-decoration: underline;
 }
 
-form {
-    width: 100%; /* Ocupa todo el espacio disponible */
-    max-width: 300px; /* Limita el ancho máximo */
+.form-login {
+    width: 100%;
+    max-width: 300px;
 }
 
 /* .sidebar {
@@ -396,5 +396,91 @@ img.logo-img {
     .submenu li a {
         padding: 10px 15px;
     }
+}
+
+
+/*Formilario creacion de proyectos*/
+
+/* Estilos generales */
+/* Contenedor del formulario */
+.form-container {
+    max-width: 90%; /* Ancho más amplio */
+    width: 80%;
+    margin: 20px auto;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Título del formulario */
+.form-container h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #3a75eb;
+    font-size: 1.8rem;
+}
+
+/* Diseño de dos columnas */
+.form-group-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Dos columnas iguales */
+    gap: 20px; /* Espaciado entre columnas y filas */
+}
+
+/* Cada grupo del formulario */
+.form-group {
+    margin-bottom: 15px;
+}
+
+/* Etiquetas */
+.form-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+    font-size: 14px;
+    color: #333;
+}
+
+/* Entradas de texto y área de texto */
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+/* Campos de texto grandes (textarea) */
+.form-group.textarea {
+    grid-column: span 2; /* Ocupa ambas columnas */
+}
+
+/* Botón de envío */
+.submit-btn {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    background-color: #3a75eb;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 20px;
+}
+
+.submit-btn:hover {
+    background-color: #3a75eb;
+}
+
+.error-message {
+    color: red;
+    font-size: 14px;
+    margin-top: 5px;
+    display: block;
 }
 
