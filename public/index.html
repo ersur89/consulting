@@ -19,7 +19,8 @@
         <div class="form-section">
             <img src="leaf.jpg" alt="Logo" class="logo">
             <h2>Bienvenido de Nuevo</h2>
-            <form action="/dashboard" method="POST">
+            <div id="error-message" style="color: red; display: none; text-align: center; margin-bottom: 10px;"></div>
+            <form id="login-form">
                 <div class="input-group">
                     <label for="username">Usuario</label>
                     <input type="text" id="username" name="username" placeholder="Ingresa tu usuario" required>
@@ -33,5 +34,6 @@
             <p class="footer-text">Olvidaste tu contraseña? <a href="#">Click Aqui</a></p>
         </div>
     </div>
+    <script src="js/login.js"></script>
 </body>
 </html>
