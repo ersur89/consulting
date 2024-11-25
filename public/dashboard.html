@@ -33,6 +33,13 @@
                 </ul>
                 
             </li>
+            <li>
+                <a href="#" ><i class="fas fa-user-cog"></i> <span class="menu-text">Administracion</span></a>
+                <ul class="submenu">
+                    <li><a href="#" id="menu-admin"><i class="fas fa-plus"></i> <span class="menu-text">Crear Usuario</span></a></li>
+                </ul>
+                
+            </li>
             <li><a href="#"><i class="fas fa-sign-out-alt"></i> <span class="menu-text">Salir</span></a></li>
         </ul>
     </div>
@@ -42,6 +49,35 @@
         <p>Esta es tu página de inicio.</p>
     </div>
 
-    <script src="script.js"></script>
+    <div id="custom-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Mensaje</h3>
+            </div>
+            <div class="modal-body">
+                <img src="/img/info-icon.png" alt="Icono" class="modal-icon">
+                <p id="modal-message">Este es un mensaje de advertencia o información.</p>
+            </div>
+            <div class="modal-actions">
+                <button id="accept-button" class="button">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- <div id="custom-modal" class="modal">
+        <div class="modal-header">
+            <span id="modal-title">Message</span>
+        </div>
+        <div class="modal-content">
+            <img id="modal-icon" src="" alt="Icon" class="modal-icon">
+            <p id="modal-message"></p>
+        </div>
+        <div class="modal-actions">
+            <button id="accept-button" class="button">Aceptar</button>
+        </div>
+    </div> -->
+    <script src="js/script.js"></script>
+
+    
 </body>
 </html>

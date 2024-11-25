@@ -445,6 +445,7 @@ img.logo-img {
 
 /* Entradas de texto y área de texto */
 .form-group input,
+.form-group select,
 .form-group textarea {
     width: 100%;
     padding: 10px;
@@ -484,3 +485,91 @@ img.logo-img {
     display: block;
 }
 
+
+
+/* Estilo del modal */
+.modal {
+    display: none; /* Se muestra dinámicamente con JavaScript */
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Fondo semi-transparente */
+    font-family: Arial, sans-serif;
+}
+
+.modal-content {
+    background-color: white;
+    position: absolute;
+    top: 50%; /* Centrado vertical */
+    left: 50%; /* Centrado horizontal */
+    transform: translate(-50%, -50%); /* Ajuste de posición exacta */
+    padding: 0; /* Elimina el padding externo */
+    border-radius: 10px;
+    width: 300px; /* Ancho del popup */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    overflow: hidden; /* Permite bordes redondeados */
+}
+
+.modal-header {
+    background-color: #0056b3; /* Azul del proyecto */
+    color: white;
+    padding: 10px 15px;
+    font-size: 18px;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    text-align: center;
+}
+
+.modal-body {
+    padding: 15px;
+    text-align: center;
+}
+
+.modal-icon {
+    width: 50px; /* Tamaño reducido del ícono */
+    height: 50px;
+    margin: 10px auto;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end; /* Alinea el botón a la derecha */
+    padding: 10px 15px;
+    border-top: 1px solid #ddd; /* Línea separadora */
+}
+
+.button {
+    background-color: #0056b3; /* Azul del proyecto */
+    color: white;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.button:hover {
+    background-color: #003d80;
+}
+
+.button:active {
+    background-color: #002850;
+}
+
+
+
+
+.modal-content.success img {
+    content: url('success-icon.png'); /* Reemplaza con el icono de éxito */
+}
+
+.modal-content.error img {
+    content: url('error-icon.png'); /* Reemplaza con el icono de error */
+}
+
+.modal-content.warning img {
+    content: url('warning-icon.png'); /* Reemplaza con el icono de advertencia */
+}

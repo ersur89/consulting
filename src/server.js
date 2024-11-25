@@ -40,6 +40,71 @@ app.post('/validate-login', (req, res) => {
     });
 });
 
+// Ruta para crear o actualizar cliente y proyecto
+app.post('/crear-proyecto', (req, res) => {
+    const { nombreProyecto, descripcion, rucCedula, nombreCliente, direccion, telefono, correo } = req.body;
+
+    // Validar que el cliente exista
+    const queryCliente = `SELECT * FROM com_cliente WHERE cedula_ruc = ?`;
+    db.query(queryCliente, [rucCedula], (err, results) => {
+        if (err) {
+            return res.status(500).json({ error: 'Error al buscar cliente' });
+        }
+
+        if (results.length > 0) {
+            // Si el cliente existe, actualizarlo
+            const clienteId = results[0].id_cliente;
+            const updateCliente = `
+                UPDATE com_cliente SET 
+                    nombre = ?, 
+                    direccion = ?, 
+                    telefono = ?, 
+                    correo = ? 
+                WHERE id_cliente = ?
+            `;
+            db.query(updateCliente, [nombreCliente, direccion, telefono, correo, clienteId], (err) => {
+                if (err) {
+                    return res.status(500).json({ error: 'Error al actualizar cliente' });
+                }
+
+                // Insertar proyecto asociado
+                insertarProyecto(clienteId);
+            });
+        } else {
+            // Si el cliente no existe, crearlo
+            const insertCliente = `
+                INSERT INTO com_cliente (cedula_ruc, nombre, direccion, telefono, correo)
+                VALUES (?, ?, ?, ?, ?)
+            `;
+            db.query(insertCliente, [rucCedula, nombreCliente, direccion, telefono, correo], (err, result) => {
+                if (err) {
+                    return res.status(500).json({ error: 'Error al crear cliente' });
+                }
+
+                const clienteId = result.insertId;
+
+                // Insertar proyecto asociado
+                insertarProyecto(clienteId);
+            });
+        }
+
+        // Función para insertar proyecto
+        function insertarProyecto(clienteId) {
+            const insertProyecto = `
+                INSERT INTO com_proyecto (nombre, descripcion, id_cliente)
+                VALUES (?, ?, ?)
+            `;
+            db.query(insertProyecto, [nombreProyecto, descripcion, clienteId], (err) => {
+                if (err) {
+                    return res.status(500).json({ error: 'Error al crear proyecto' });
+                }
+
+                return res.status(200).json({ message: 'Proyecto creado con éxito' });
+            });
+        }
+    });
+});
+
 // Iniciar el servidor
 app.listen(PORT, () => {
     console.log(`Servidor iniciado en http://localhost:${PORT}`);
