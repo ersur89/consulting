@@ -96,14 +96,29 @@ app.post('/crear-proyecto', (req, res) => {
             `;
             db.query(insertProyecto, [nombreProyecto, descripcion, clienteId], (err) => {
                 if (err) {
-                    return res.status(500).json({ error: 'Error al crear proyecto' });
+                    return res.status(500).json({ error: 'Error al crear proyecto' , success: false });
                 }
 
-                return res.status(200).json({ message: 'Proyecto creado con éxito' });
+                return res.status(200).json({ message: 'Proyecto creado con éxito' , success: true});
             });
         }
     });
 });
+
+//TRAE USUARIOS
+app.get('/api/usuarios', (req, res) => {
+    const query = `SELECT usuario, nombre, correo, estado FROM adm_usuario`;
+
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error('Error al ejecutar la consulta:', err.message);
+            return res.status(500).json({ error: 'Error al obtener los usuarios' });
+        }
+
+        res.json(results); // Devuelve los resultados como JSON
+    });
+});
+
 
 // Iniciar el servidor
 app.listen(PORT, () => {
