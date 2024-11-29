@@ -26,7 +26,7 @@ document.querySelectorAll('.menu > li > a').forEach(menuItem => {
 
 
 
-
+//NUEVO PROYECTO
 document.addEventListener('DOMContentLoaded', () => {
     const menuCrear = document.getElementById('menu-crear');
     const contentArea = document.getElementById('content-area');
@@ -125,8 +125,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // Validar teléfono
-                if (!/^\d{6}$/.test(clientPhone)) {
-                    document.getElementById('error-phone').textContent = 'El teléfono debe contener exactamente 10 números.';
+                if (!clientPhone) {
+                    document.getElementById('error-phone').textContent = 'El teléfono es obligatorio.';
                     isValid = false;
                 }
 
@@ -169,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (data.success) {
                                 showMessage(data.message, 'success');
                                 // Opcional: reiniciar el formulario
-                                //document.getElementById('projectForm').reset();
+                                document.getElementById('projectForm').reset();
                             } else {
                                 showMessage(data.message || 'Hubo un problema al procesar la solicitud.', 'error'); // Modal para errores
                             }
@@ -187,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-
+//INICIO
 document.addEventListener('DOMContentLoaded', () => {
     const menuCrear = document.getElementById('menu-inicio');
     const contentArea = document.getElementById('content-area');
@@ -209,7 +209,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-document.addEventListener('DOMContentLoaded', () => {
+
+//CREAR USUARIO
+/* document.addEventListener('DOMContentLoaded', () => {
     const menuAdmin = document.getElementById('menu-admin');
     const contentArea = document.getElementById('content-area');
 
@@ -324,8 +326,167 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         console.error('El elemento con id "menu-inicio" no existe en el DOM.');
     }
-});
+}); */
 
+document.addEventListener('DOMContentLoaded', () => {
+    const menuAdmin = document.getElementById('menu-admin');
+    const contentArea = document.getElementById('content-area');
+    const popupOverlay = document.getElementById('user-popup'); // Referencia al popup
+    const closeButton = document.getElementById('close-popup'); // Botón para cerrar el popup
+    const userForm = document.getElementById('user-form'); // Formulario de usuario
+    
+
+    if (menuAdmin) {
+        menuAdmin.addEventListener('click', async (e) => {
+            e.preventDefault();
+
+            // Solicitar datos al backend
+            let usuarios = [];
+            try {
+                const response = await fetch('/api/usuarios');
+                if (!response.ok) throw new Error('Error al obtener los usuarios');
+                usuarios = await response.json();
+            } catch (error) {
+                console.error('Error:', error);
+                contentArea.innerHTML = `<p class="error-message">No se pudieron cargar los usuarios.</p>`;
+                return;
+            }
+
+            // Generar HTML dinámico para el grid
+            const html = `
+                <div class="table-header">
+                    <h2>Usuarios Registrados</h2>
+                    <button class="create-button">CREAR NUEVO</button>
+                    <div class="filters">
+                        <select class="filter-select">
+                            <option value="">Estado</option>
+                            <option value="activo">Activo</option>
+                            <option value="inactivo">Inactivo</option>
+                        </select>
+                        <input type="text" class="search-input" placeholder="Buscar Usuario" />
+                        <button class="search-button">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="user-grid">
+                    <div class="user-grid-header">
+                        <div class="user-grid-cell">Usuario</div>
+                        <div class="user-grid-cell">Nombre</div>
+                        <div class="user-grid-cell">Email</div>
+                        <div class="user-grid-cell">Estado</div>
+                        <div class="user-grid-cell">Operaciones</div>
+                    </div>
+                    ${usuarios
+                        .map(
+                            (user) => `
+                            <div class="user-grid-row">
+                                <div class="user-grid-cell">${user.usuario}</div>
+                                <div class="user-grid-cell">${user.nombre}</div>
+                                <div class="user-grid-cell">${user.correo}</div>
+                                <div class="${
+                                    user.estado === 'ACTIVO' ? 'status-activo' : 'status-inactivo'
+                                }">${user.estado}</div>
+                                <div class="user-grid-cell">
+                                    <button class="edit-button">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="delete-button">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `
+                        )
+                        .join('')}
+                </div>
+            `;
+
+            // Insertar el HTML en el área de contenido
+            contentArea.innerHTML = html;
+
+            const createButton = document.querySelector('.create-button'); // Botón "Crear Nuevo"
+            createButton.addEventListener('click', () => {
+                popupOverlay.style.display = 'flex'; // Mostrar el popup
+            });
+        });
+    } else {
+        console.error('El elemento con id "menu-admin" no existe en el DOM.');
+    }
+
+    /* // Mostrar el popup de "Crear Nuevo" al hacer clic en el botón
+    createButton.addEventListener('click', () => {
+        popupOverlay.style.display = 'flex'; // Mostrar el popup
+    }); */
+
+    // Cerrar el popup al hacer clic en el botón "×"
+    closeButton.addEventListener('click', () => {
+        popupOverlay.style.display = 'none'; // Ocultar el popup
+    });
+
+    // Manejar el envío del formulario para guardar el nuevo usuario
+    userForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const newUser = {
+            username: document.getElementById('username').value,
+            nombre: document.getElementById('nombre').value,
+            correo: document.getElementById('correo').value,
+            password: document.getElementById('password').value,
+            permission: document.getElementById('permission').value,
+            estado: document.getElementById('estado').value,
+        };
+
+        let isValid = true;
+
+        /* if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(correo)) {
+            document.getElementById('error-email').textContent = 'El correo electrónico no tiene un formato válido.'.correo;
+            isValid = false;
+        } */
+
+        if (isValid) {
+            const response = await fetch('/api/usuarios/crear', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(newUser),
+            });
+            
+            try {
+                // Verificamos si la respuesta es exitosa
+                const data = await response.json(); // Parsear JSON
+            
+                if (response.ok) {
+                    // Si la respuesta es exitosa
+                    showMessage(data.message || 'Usuario creado exitosamente.', 'success');
+                    document.getElementById('user-form').reset();
+                    popupOverlay.style.display = 'none'; // Cerrar el popup
+                } else {
+                    // Si hubo errores en el backend
+                    // Mostrar mensajes de error del backend
+                    showMessage(data.message || 'Error al guardar el usuario.', 'error');
+            
+                    // Aquí puedes mostrar mensajes específicos para cada campo de validación
+                    if (data.username) {
+                        document.getElementById('error-username').textContent = data.username;
+                    }
+                    if (data.email) {
+                        document.getElementById('error-email').textContent = data.email;
+                    }
+                    if (data.password) {
+                        document.getElementById('error-password').textContent = data.password;
+                    }
+                    // Añadir otros campos de error si es necesario...
+                }
+            } catch (error) {
+                // En caso de error de red o un fallo general
+                console.error('Error:', error);
+                showMessage('Hubo un problema. No se pudo guardar el usuario.', 'error');
+            }
+        }
+    });
+});
 
 //================================== bloque de funciones ====================================
 // Función para mostrar el modal con el mensaje
@@ -346,7 +507,7 @@ function showMessage(message, type = 'info') {
             modalHeader.style.backgroundColor = '#4CAF50'; // Verde para éxito
             break;
         case 'error':
-            modalIcon.src = '../img/error-icon.png'; // Reemplaza con la ruta del icono de error
+            modalIcon.src = '/img/error-icon.png'; // Reemplaza con la ruta del icono de error
             modalHeader.style.backgroundColor = '#F44336'; // Rojo para error
             break;
         case 'warning':

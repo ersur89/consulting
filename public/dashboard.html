@@ -55,12 +55,59 @@
                 <h3>Mensaje</h3>
             </div>
             <div class="modal-body">
-                <img src="/img/info-icon.png" alt="Icono" class="modal-icon">
+                <img src="/img/info-icon.png" alt="Icono" class="modal-icon" id="modal-icon">
                 <p id="modal-message">Este es un mensaje de advertencia o información.</p>
             </div>
             <div class="modal-actions">
                 <button id="accept-button" class="button">Aceptar</button>
             </div>
+        </div>
+    </div>
+
+    <div id="user-popup" class="popup-overlay">
+        <div class="popup-content">
+            <div class="popup-header">
+                <h3>Mantenimiento de Usuario</h3>
+                <button class="close-popup" id="close-popup">&times;</button>
+            </div>
+            <form id="user-form" method="POST">
+                <div class="popup-body">
+                    <label for="username">Usuario:</label>
+                    <input type="text" id="username" name="username" placeholder="Ingresa el usuario" required />
+                    <span class="error-message" id="error-username"></span>
+
+                    <label for="password">clave:</label>
+                    <input type="password" id="password" name="password" placeholder="Ingresa el clave" required />
+                    <span class="error-message" id="error-password"></span>
+
+                    <label for="nombre">Nombre:</label>
+                    <input type="text" id="nombre" name="nombre" placeholder="Ingresa el nombre completo" required />
+                    <span class="error-message" id="error-name"></span>
+
+                    <label for="correo">Correo:</label>
+                    <input type="email" id="correo" name="correo" placeholder="Ingresa el correo electrónico" required />
+                    <span class="error-message" id="error-email"></span>
+
+                    <label for="permission">Permiso:</label>
+                    <select id="permission" name="permission" required>
+                        <option value="">Seleccione un permiso</option>
+                        <option value="user">Usuario</option>
+                        <option value="admin">Administrador</option>
+                    </select>
+                    <span class="error-message" id="error-permission"></span>
+
+                    <label for="estado">Estado:</label>
+                    <select id="estado" name="estado" required>
+                        <option value="Activo">Activo</option>
+                        <option value="Inactivo">Inactivo</option>
+                    </select>
+                    <span class="error-message" id="error-status"></span>
+
+                </div>
+                <div class="popup-footer">
+                    <button type="submit" class="save-button">Guardar</button>
+                </div>
+            </form>
         </div>
     </div>
 

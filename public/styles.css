@@ -481,7 +481,8 @@ img.logo-img {
 .error-message {
     color: red;
     font-size: 14px;
-    margin-top: 5px;
+    margin-top: 0;
+    margin-bottom: 3px;
     display: block;
 }
 
@@ -572,4 +573,247 @@ img.logo-img {
 
 .modal-content.warning img {
     content: url('warning-icon.png'); /* Reemplaza con el icono de advertencia */
+}
+
+
+/*grid de usuario*/
+
+/* Estilos específicos para el grid de usuarios */
+/* .user-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr); 
+    gap: 10px;
+    margin-top: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+} */
+
+.user-grid {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+/* .user-grid-header {
+    display: contents; 
+    font-weight: bold;
+    background-color: #4CAF50; 
+    text-align: center;
+} */
+.user-grid-header {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    background-color: #d6d6d6;
+    font-weight: bold;
+    padding: 10px 0;
+}
+
+/* .user-grid-row {
+    display: contents; 
+    text-align: center;
+    background-color: #f9f9f9;
+    transition: background-color 0.3s ease;
+    border-bottom: 1px solid #e0e0e0; 
+} */
+
+.user-grid-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    border-bottom: 1px solid #ddd;
+    align-items: center;
+    text-align: center;
+    background-color: #f9f9f9;
+    transition: background-color 0.3s ease;
+}
+
+.user-grid-cell {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+}
+
+.user-grid-cell:last-child {
+    display: flex;
+    gap: 10px;
+}
+
+/* Botones de operación */
+.edit-button, .delete-button {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    font-size: 16px;
+}
+
+.edit-button i {
+    color: #007bff;
+    transition: width 2s, height 2s;
+}
+
+.delete-button i {
+    color: #dc3545;
+    transition: width 2s, height 2s;
+}
+
+
+
+/* Estilos para el estado */
+/* Verde para "Activo" */
+/* .user-grid .status-activo {
+    color: #28a745; 
+    font-weight: bold;
+} */ 
+
+/* Rojo para "Inactivo" */
+/* .user-grid .status-inactivo {
+    color: #dc3545; 
+    font-weight: bold;
+} */
+
+.edit-button:hover, .delete-button:hover {
+    
+    box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24),0 17px 50px 0 rgba(0,0,0,0.19);
+} 
+
+.filters {
+    display: flex;
+    gap: 10px;
+}
+
+.filter-select, .search-input {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.search-button {
+    background-color: rgb(56, 111, 221);
+    border: none;
+    border-radius: 5px;
+    padding: 10px;
+    cursor: pointer;
+}
+
+.search-button i {
+    color: #ffffff;
+}
+
+.create-button {
+    background-color: rgb(56, 111, 221);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    margin: 10px;
+}
+
+.create-button:hover, .search-button:hover {
+    background-color: rgb(96, 144, 240);
+    box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24),0 17px 50px 0 rgba(0,0,0,0.19);
+}
+
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.table-header h2 {
+    font-size: 20px;
+    color: #333;
+    padding: 15px;
+}
+
+/* Pie de la tabla */
+.table-footer {
+    margin-top: 10px;
+    text-align: right;
+    font-size: 14px;
+    color: #555;
+}
+
+
+/* Estilos para el popup de crear usuario */
+#user-popup {
+    display: none; /* Ocultamos el popup inicialmente */
+    position: fixed; /* Lo fijamos en la pantalla */
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5); /* Fondo oscuro semi-transparente */
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* Asegura que el popup esté por encima de todo */
+}
+
+#user-popup .popup-content {
+    background-color: #fff;
+    padding: 20px;
+    width: 400px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+#user-popup .popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 20px;
+    margin-bottom: 5px;
+}
+
+#user-popup .popup-header h3 {
+    font-weight: bold;
+    color: #3a75eb;
+}
+
+#user-popup .close-popup {
+    cursor: pointer;
+    background-color: rgb(238, 83, 83);
+    font-size: 24px;
+    border-radius: 3px;
+    color: white;
+    border: none;
+}
+
+#user-popup .popup-body {
+    display: flex;
+    flex-direction: column;
+}
+
+#user-popup .popup-body label {
+    margin-bottom: 5px;
+}
+
+#user-popup .popup-body input,
+#user-popup .popup-body select {
+    margin-bottom: 5px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+#user-popup .popup-footer {
+    display: flex;
+    justify-content: flex-end;
+}
+
+#user-popup .popup-footer button {
+    padding: 8px 15px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#user-popup .popup-footer button:hover {
+    background-color: #0056b3;
 }
