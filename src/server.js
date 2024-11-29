@@ -331,6 +331,27 @@ app.post('/api/usuarios/crear', async (req, res) => {
 });
 
 
+// Ruta para eliminar un usuario por el campo "usuario"
+app.delete('/api/usuarios/:usuario', (req, res) => {
+    const username = req.params.usuario;
+
+    // Ejemplo de eliminación en una base de datos usando callbacks
+    db.query('DELETE FROM adm_usuario WHERE usuario = ?', [username], (error, result) => {
+        if (error) {
+            console.error('Error en la ruta DELETE /api/usuarios/:usuario:', error);
+            return res.status(500).json({ message: 'Error interno del servidor.' });
+        }
+
+        if (result.affectedRows === 0) {
+            // Usuario no encontrado
+            return res.status(404).json({ message: 'Usuario no encontrado.' });
+        }
+
+        // Respuesta exitosa
+        res.status(200).json({ message: 'Usuario eliminado exitosamente.' });
+    });
+});
+
 // Iniciar el servidor
 app.listen(PORT, () => {
     console.log(`Servidor iniciado en http://localhost:${PORT}`);

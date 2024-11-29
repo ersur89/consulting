@@ -328,7 +328,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 }); */
 
-document.addEventListener('DOMContentLoaded', () => {
+/* document.addEventListener('DOMContentLoaded', () => {
     const menuAdmin = document.getElementById('menu-admin');
     const contentArea = document.getElementById('content-area');
     const popupOverlay = document.getElementById('user-popup'); // Referencia al popup
@@ -414,10 +414,6 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('El elemento con id "menu-admin" no existe en el DOM.');
     }
 
-    /* // Mostrar el popup de "Crear Nuevo" al hacer clic en el botón
-    createButton.addEventListener('click', () => {
-        popupOverlay.style.display = 'flex'; // Mostrar el popup
-    }); */
 
     // Cerrar el popup al hacer clic en el botón "×"
     closeButton.addEventListener('click', () => {
@@ -439,10 +435,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let isValid = true;
 
-        /* if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(correo)) {
-            document.getElementById('error-email').textContent = 'El correo electrónico no tiene un formato válido.'.correo;
-            isValid = false;
-        } */
 
         if (isValid) {
             const response = await fetch('/api/usuarios/crear', {
@@ -486,7 +478,351 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+}); */
+
+/* document.addEventListener('DOMContentLoaded', () => {
+    const menuAdmin = document.getElementById('menu-admin');
+    const contentArea = document.getElementById('content-area');
+    const popupOverlay = document.getElementById('user-popup'); // Referencia al popup
+    const closeButton = document.getElementById('close-popup'); // Botón para cerrar el popup
+    const userForm = document.getElementById('user-form'); // Formulario de usuario
+
+    // Función para cargar la lista de usuarios
+    async function loadUsuarios() {
+        let usuarios = [];
+        try {
+            const response = await fetch('/api/usuarios');
+            if (!response.ok) throw new Error('Error al obtener los usuarios');
+            usuarios = await response.json();
+        } catch (error) {
+            console.error('Error:', error);
+            contentArea.innerHTML = `<p class="error-message">No se pudieron cargar los usuarios.</p>`;
+            return;
+        }
+
+        // Generar HTML dinámico para el grid
+        const html = `
+            <div class="table-header">
+                <h2>Usuarios Registrados</h2>
+                <button class="create-button">CREAR NUEVO</button>
+                <div class="filters">
+                    <select class="filter-select">
+                        <option value="">Estado</option>
+                        <option value="activo">Activo</option>
+                        <option value="inactivo">Inactivo</option>
+                    </select>
+                    <input type="text" class="search-input" placeholder="Buscar Usuario" />
+                    <button class="search-button">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="user-grid">
+                <div class="user-grid-header">
+                    <div class="user-grid-cell">Usuario</div>
+                    <div class="user-grid-cell">Nombre</div>
+                    <div class="user-grid-cell">Email</div>
+                    <div class="user-grid-cell">Estado</div>
+                    <div class="user-grid-cell">Operaciones</div>
+                </div>
+                ${usuarios
+                    .map(
+                        (user) => `
+                        <div class="user-grid-row">
+                            <div class="user-grid-cell">${user.usuario}</div>
+                            <div class="user-grid-cell">${user.nombre}</div>
+                            <div class="user-grid-cell">${user.correo}</div>
+                            <div class="${
+                                user.estado === 'ACTIVO' ? 'status-activo' : 'status-inactivo'
+                            }">${user.estado}</div>
+                            <div class="user-grid-cell">
+                                <button class="edit-button">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="delete-button">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `
+                    )
+                    .join('')}
+            </div>
+        `;
+
+        // Insertar el HTML en el área de contenido
+        contentArea.innerHTML = html;
+
+        // Configurar el botón "Crear Nuevo"
+        const createButton = document.querySelector('.create-button'); // Botón "Crear Nuevo"
+        createButton.addEventListener('click', () => {
+            popupOverlay.style.display = 'flex'; // Mostrar el popup
+        });
+    }
+
+    // Llamar a loadUsuarios cuando se haga clic en el menú admin
+    if (menuAdmin) {
+        menuAdmin.addEventListener('click', async (e) => {
+            e.preventDefault();
+            await loadUsuarios();
+        });
+    } else {
+        console.error('El elemento con id "menu-admin" no existe en el DOM.');
+    }
+
+    // Cerrar el popup al hacer clic en el botón "×"
+    closeButton.addEventListener('click', () => {
+        popupOverlay.style.display = 'none'; // Ocultar el popup
+    });
+
+    // Manejar el envío del formulario para guardar el nuevo usuario
+    userForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const newUser = {
+            username: document.getElementById('username').value,
+            nombre: document.getElementById('nombre').value,
+            correo: document.getElementById('correo').value,
+            password: document.getElementById('password').value,
+            permission: document.getElementById('permission').value,
+            estado: document.getElementById('estado').value,
+        };
+
+        try {
+            const response = await fetch('/api/usuarios/crear', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(newUser),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showMessage(data.message || 'Usuario creado exitosamente.', 'success');
+                userForm.reset();
+                popupOverlay.style.display = 'none'; // Cerrar el popup
+                await loadUsuarios(); // Refrescar la lista de usuarios
+            } else {
+                showMessage(data.message || 'Error al guardar el usuario.', 'error');
+
+                // Mostrar mensajes específicos para cada campo
+                if (data.username) {
+                    document.getElementById('error-username').textContent = data.username;
+                }
+                if (data.email) {
+                    document.getElementById('error-email').textContent = data.email;
+                }
+                if (data.password) {
+                    document.getElementById('error-password').textContent = data.password;
+                }
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showMessage('Hubo un problema. No se pudo guardar el usuario.', 'error');
+        }
+    });
+}); */
+
+document.addEventListener('DOMContentLoaded', () => {
+    const menuAdmin = document.getElementById('menu-admin');
+    const contentArea = document.getElementById('content-area');
+    const popupOverlay = document.getElementById('user-popup'); // Referencia al popup
+    const closeButton = document.getElementById('close-popup'); // Botón para cerrar el popup
+    const userForm = document.getElementById('user-form'); // Formulario de usuario
+
+    const deletePopup = document.getElementById('delete-popup'); // Popup de confirmación de eliminación
+    const confirmDeleteButton = document.getElementById('confirm-delete'); // Botón confirmar eliminación
+    const cancelDeleteButton = document.getElementById('cancel-delete'); // Botón cancelar eliminación
+
+    let userIdToDelete = null; // Para almacenar el ID del usuario a eliminar
+
+    // Función para cargar la lista de usuarios
+    async function loadUsuarios() {
+        let usuarios = [];
+        try {
+            const response = await fetch('/api/usuarios');
+            if (!response.ok) throw new Error('Error al obtener los usuarios');
+            usuarios = await response.json();
+        } catch (error) {
+            console.error('Error:', error);
+            contentArea.innerHTML = `<p class="error-message">No se pudieron cargar los usuarios.</p>`;
+            return;
+        }
+
+        // Generar HTML dinámico para el grid
+        const html = `
+            <div class="table-header">
+                <h2>Usuarios Registrados</h2>
+                <button class="create-button">CREAR NUEVO</button>
+                <div class="filters">
+                    <select class="filter-select">
+                        <option value="">Estado</option>
+                        <option value="activo">Activo</option>
+                        <option value="inactivo">Inactivo</option>
+                    </select>
+                    <input type="text" class="search-input" placeholder="Buscar Usuario" />
+                    <button class="search-button">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="user-grid">
+                <div class="user-grid-header">
+                    <div class="user-grid-cell">Usuario</div>
+                    <div class="user-grid-cell">Nombre</div>
+                    <div class="user-grid-cell">Email</div>
+                    <div class="user-grid-cell">Estado</div>
+                    <div class="user-grid-cell">Operaciones</div>
+                </div>
+                ${usuarios
+                    .map(
+                        (user) => `
+                        <div class="user-grid-row" data-user-id="${user.usuario}">
+                            <div class="user-grid-cell">${user.usuario}</div>
+                            <div class="user-grid-cell">${user.nombre}</div>
+                            <div class="user-grid-cell">${user.correo}</div>
+                            <div class="${
+                                user.estado === 'ACTIVO' ? 'status-activo' : 'status-inactivo'
+                            }">${user.estado}</div>
+                            <div class="user-grid-cell">
+                                <button class="edit-button">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="delete-button">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `
+                    )
+                    .join('')}
+            </div>
+        `;
+
+        // Insertar el HTML en el área de contenido
+        contentArea.innerHTML = html;
+
+        // Configurar el botón "Crear Nuevo"
+        const createButton = document.querySelector('.create-button'); // Botón "Crear Nuevo"
+        createButton.addEventListener('click', () => {
+            popupOverlay.style.display = 'flex'; // Mostrar el popup
+        });
+
+        // Configurar eventos de los botones de eliminar
+        document.querySelectorAll('.delete-button').forEach((button) => {
+            button.addEventListener('click', (e) => {
+                const userRow = e.target.closest('.user-grid-row');
+                if (userRow) {
+                    userToDelete = userRow.dataset.userId; // Obtener el usuario
+                    deletePopup.style.display = 'flex'; // Mostrar el popup
+                }
+            });
+        });
+    }
+
+    // Manejar la confirmación de eliminación
+    confirmDeleteButton.addEventListener('click', async () => {
+        if (userToDelete) {
+            try {
+                const response = await fetch(`/api/usuarios/${userToDelete}`, {
+                    method: 'DELETE',
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage(data.message || 'Usuario eliminado exitosamente.', 'success');
+                    await loadUsuarios(); // Refrescar la lista de usuarios
+                } else {
+                    showMessage(data.message || 'Error al eliminar el usuario.', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('Hubo un problema al eliminar el usuario.', 'error');
+            } finally {
+                deletePopup.style.display = 'none'; // Ocultar el popup
+                userIdToDelete = null; // Resetear el ID
+            }
+        }
+    });
+
+    // Cancelar la eliminación
+    cancelDeleteButton.addEventListener('click', () => {
+        deletePopup.style.display = 'none'; // Ocultar el popup
+        userIdToDelete = null; // Resetear el ID
+    });
+
+    // Llamar a loadUsuarios cuando se haga clic en el menú admin
+    if (menuAdmin) {
+        menuAdmin.addEventListener('click', async (e) => {
+            e.preventDefault();
+            await loadUsuarios();
+        });
+    } else {
+        console.error('El elemento con id "menu-admin" no existe en el DOM.');
+    }
+
+    // Cerrar el popup al hacer clic en el botón "×"
+    closeButton.addEventListener('click', () => {
+        popupOverlay.style.display = 'none'; // Ocultar el popup
+    });
+
+    // Manejar el envío del formulario para guardar el nuevo usuario
+    userForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const newUser = {
+            username: document.getElementById('username').value,
+            nombre: document.getElementById('nombre').value,
+            correo: document.getElementById('correo').value,
+            password: document.getElementById('password').value,
+            permission: document.getElementById('permission').value,
+            estado: document.getElementById('estado').value,
+        };
+
+        try {
+            const response = await fetch('/api/usuarios/crear', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(newUser),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showMessage(data.message || 'Usuario creado exitosamente.', 'success');
+                userForm.reset();
+                popupOverlay.style.display = 'none'; // Cerrar el popup
+                await loadUsuarios(); // Refrescar la lista de usuarios
+            } else {
+                showMessage(data.message || 'Error al guardar el usuario.', 'error');
+
+                // Mostrar mensajes específicos para cada campo
+                if (data.username) {
+                    document.getElementById('error-username').textContent = data.username;
+                }
+                if (data.email) {
+                    document.getElementById('error-email').textContent = data.email;
+                }
+                if (data.password) {
+                    document.getElementById('error-password').textContent = data.password;
+                }
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showMessage('Hubo un problema. No se pudo guardar el usuario.', 'error');
+        }
+    });
 });
+
+
+//eliminacion de uduario
+
+
 
 //================================== bloque de funciones ====================================
 // Función para mostrar el modal con el mensaje
