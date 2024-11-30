@@ -10,7 +10,7 @@ body {
     flex-direction: column;
     margin: 0 auto;
     padding: 20px;
-
+    overflow: hidden;
 }
 
 /* Contenedor principal */
@@ -593,6 +593,8 @@ img.logo-img {
 .user-grid {
     width: 100%;
     border-collapse: collapse;
+    border-radius:30px;
+    box-shadow:  8px 8px 5px 0px #bdbdbdbf;
 }
 
 /* .user-grid-header {
@@ -606,7 +608,9 @@ img.logo-img {
     grid-template-columns: repeat(5, 1fr);
     background-color: #d6d6d6;
     font-weight: bold;
-    padding: 1px 0;
+    padding: 5px 0;
+    border-top-left-radius: 30px;
+    border-top-right-radius: 30px;
 }
 
 /* .user-grid-row {
@@ -626,11 +630,13 @@ img.logo-img {
     background-color: #f9f9f9;
     transition: background-color 0.3s ease;
     padding: 1px 0;
+    border-bottom-left-radius: 30px;
+    border-bottom-right-radius: 30px;
 }
 
 .user-grid-cell {
     flex: 1;
-    padding: 10px;
+    padding: 5px;
     text-align: center;
 }
 
@@ -860,4 +866,28 @@ img.logo-img {
     border-radius: 5px;
     cursor: pointer;
     margin: 10px;
+}
+
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+}
+
+.pagination button {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    margin: 0 10px;
+}
+
+.pagination button:disabled {
+    color: #ccc;
+}
+
+.pagination button i {
+    font-size: 24px;  /* Ajusta el tamaño de las flechas */
+    color: #333;      /* Color de las flechas */
 }

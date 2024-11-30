@@ -6,6 +6,8 @@
     <title>Consulting</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
 </head>
 <body>
     <div id="menu-toggle" class="menu-toggle">☰</div>
@@ -105,7 +107,8 @@
 
                 </div>
                 <div class="popup-footer">
-                    <button type="submit" class="save-button">Guardar</button>
+                    <button id="new-button" type="submit" style="display: none;" >Guardar</button>
+                    <button type="submit" id="update-button" style="display: none;">Actualizar</button>
                 </div>
             </form>
         </div>
@@ -119,18 +122,7 @@
             <button id="cancel-delete" class="cancel-button">Cancelar</button>
         </div>
     </div>
-    <!-- <div id="custom-modal" class="modal">
-        <div class="modal-header">
-            <span id="modal-title">Message</span>
-        </div>
-        <div class="modal-content">
-            <img id="modal-icon" src="" alt="Icon" class="modal-icon">
-            <p id="modal-message"></p>
-        </div>
-        <div class="modal-actions">
-            <button id="accept-button" class="button">Aceptar</button>
-        </div>
-    </div> -->
+
     <script src="js/script.js"></script>
 
     
