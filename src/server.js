@@ -352,6 +352,121 @@ app.delete('/api/usuarios/:usuario', (req, res) => {
     });
 });
 
+
+// Ruta específica para obtener detalles de un usuario
+app.get('/api/usuarios-only/:usuario', async (req, res) => {
+    const { usuario } = req.params;
+
+    try {
+        // Convertir la conexión a Promesas
+        const connection = db.promise();
+
+        // Ejecutar la consulta
+        const [rows] = await connection.query(
+            'SELECT usuario, nombre, correo, estado, permiso FROM adm_usuario WHERE usuario = ?',
+            [usuario]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ message: 'Usuario no encontrado.' });
+        }
+
+        res.status(200).json(rows[0]); // Enviar el primer usuario encontrado
+    } catch (error) {
+        console.error('Error al obtener detalles del usuario:', error);
+        res.status(500).json({ message: 'Error interno del servidor.' });
+    }
+});
+
+// Ruta para actualizar los detalles de un usuario específico
+app.put('/api/usuarios-edit/:usuario', async (req, res) => {
+    const { usuario } = req.params;
+    const { nombre, correo, password, permission, estado } = req.body;
+    // Validamos los datos recibidos
+    let errors = {};
+
+    try {
+
+        // Validar otros campos
+        if (!usuario || usuario.trim() === '') {
+            errors.username = 'El nombre de usuario es obligatorio.';
+        }
+
+        if (!nombre || nombre.trim() === '') {
+            errors.name = 'El nombre es obligatorio.';
+        }
+
+        if (!correo || correo.trim() === '') {
+            errors.email = 'El correo electrónico es obligatorio.';
+        }
+
+        /* if (!password || password.trim() === '') {
+            errors.password = 'La contraseña es obligatoria.';
+        } */
+
+        if (!estado || estado.trim() === '') {
+            errors.estado = 'El estado es obligatorio.';
+        }
+
+        if (!permission || permission.trim() === '') {
+            errors.permiso = 'El permiso es obligatorio.';
+        }
+
+        // Si hay errores, respondemos con los errores
+        if (Object.keys(errors).length > 0) {
+            return res.status(400).json(errors);
+        }
+
+        // Convertir la conexión a Promesas
+        const connection = db.promise();
+
+        // Verificar si el usuario existe en la base de datos
+        const [rows] = await connection.query(
+            'SELECT * FROM adm_usuario WHERE usuario = ?',
+            [usuario]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ message: 'Usuario no encontrado.' });
+        }
+
+        
+
+        // Crear una lista de los campos que se deben actualizar
+        const updatedFields = {};
+        if (nombre) updatedFields.nombre = nombre;
+        if (correo) updatedFields.correo = correo;
+        if (permission) updatedFields.permiso = permission;
+        if (estado) updatedFields.estado = estado;
+
+        // Si se proporciona una nueva contraseña, la actualizamos también
+        if (password) {
+            // Si no hay errores, ciframos la contraseña
+            const hashedPassword = await new Promise((resolve, reject) => {
+                bcrypt.hash(password, 10, (err, hashedPassword) => {
+                    if (err) return reject(err);
+                    resolve(hashedPassword);
+                });
+            });
+            updatedFields.clave = hashedPassword; // Aquí puedes agregar lógica para encriptar la contraseña si es necesario
+        }
+
+        // Realizar la actualización en la base de datos
+        const updateQuery = 'UPDATE adm_usuario SET ? WHERE usuario = ?';
+        const [updateResult] = await connection.query(updateQuery, [updatedFields, usuario]);
+
+        if (updateResult.affectedRows === 0) {
+            return res.status(400).json({ message: 'No se pudo actualizar el usuario.' });
+        }
+
+        res.status(200).json({ message: 'Usuario actualizado exitosamente.' });
+    } catch (error) {
+        console.error('Error al actualizar el usuario:', error);
+        res.status(500).json({ message: 'Error interno del servidor.' });
+    }
+});
+
+
 // Iniciar el servidor
 app.listen(PORT, () => {
     console.log(`Servidor iniciado en http://localhost:${PORT}`);
