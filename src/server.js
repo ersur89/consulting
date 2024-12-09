@@ -3,6 +3,8 @@ const bcrypt = require('bcrypt'); // Importar bcrypt para el cifrado
 const path = require('path');
 const bodyParser = require('body-parser');
 const { AssemblyAI } = require('assemblyai');
+const { CohereClientV2 } = require('cohere-ai'); 
+
 const db = require(path.join(__dirname, 'config', 'db'));
 
 const app = express();
@@ -828,6 +830,35 @@ app.get('/api/proyectos-videos', (req, res) => {
 });
 
 
+app.post('/generate-questions', async (req, res) => {
+    const { content } = req.body;
+
+    if (!content) {
+        return res.status(400).json({ error: "Contenido no proporcionado" });
+    }
+
+    const cohere = new CohereClientV2({
+        token: 'QYGtWwsD3cNvr5KdCoUl9y6eQBmg6y9yCI35ZEqm', // Usa un token válido
+    });
+
+    try {
+        const response = await cohere.chat({
+            model: 'command-r-plus',
+            messages: [
+                {
+                    role: 'user',
+                    content: content,
+                },
+            ],
+        });
+
+        const texto = response.message;
+        res.json({ texto });
+    } catch (error) {
+        console.error("Error generando preguntas:", error);
+        res.status(500).json({ error: "Error al generar las preguntas" });
+    }
+});
 
 // Iniciar el servidor
 app.listen(PORT, () => {

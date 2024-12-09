@@ -1178,3 +1178,51 @@ BOTONES OPERACION*/
 #project-video-popup .popup-footer button:hover {
     background-color: #0056b3;
 }
+
+/*animaacion de cargando*/
+#loading-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute; /* O relativo, dependiendo de tu diseño */
+    top: 50%; /* Centrar en la página */
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: Arial, sans-serif;
+    font-size: 18px;
+    color: #0056b3;
+}
+
+.loading-text {
+    display: flex;
+    align-items: center;
+}
+
+.dot {
+    animation: blink 1.5s infinite;
+    font-size: 18px;
+}
+
+.dot:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes blink {
+    0% {
+        opacity: 0;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}

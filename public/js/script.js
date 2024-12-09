@@ -1227,6 +1227,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const popupOverlay = document.getElementById('project-video-popup');
     const closeButton = document.getElementById('close-project-video-popup');
     const projectForm = document.getElementById('project-video-form');
+    const loadingIndicator = document.getElementById('loading-indicator');
 
     const deletePopup = document.getElementById('delete-popup');
     const confirmDeleteButton = document.getElementById('confirm-delete');
@@ -1584,9 +1585,101 @@ document.addEventListener('DOMContentLoaded', () => {
         popupOverlay.style.display = 'none';
     });
 
+
+
+
     //AQUI VA A CONSUMIR EL API
-    //projectForm.addEventListener('submit', async (e) => {
-    document.getElementById('create-project-video-button').addEventListener('submit', async (e) => {
+
+    document.getElementById('create-project-video-button').addEventListener('click', async (e) => {
+        e.preventDefault(); // Prevenir el comportamiento predeterminado
+    
+        // Resetear mensajes de error
+        document.querySelectorAll('.error-message').forEach((msg) => (msg.textContent = ''));
+    
+        const audioUrl = document.getElementById('link').value.trim(); // Obtener el enlace del audio
+        const loadingIndicator = document.getElementById('loading-indicator'); // Indicador de carga
+        const errorProceso = document.getElementById('error-proceso'); // Elemento para mostrar errores del proceso
+        let isValid = true;
+    
+        // Validar el enlace
+        if (!audioUrl || !/^https?:\/\/.+$/.test(audioUrl)) {
+            document.getElementById('error-link').textContent = 'El enlace debe ser una URL válida.';
+            isValid = false;
+        }
+    
+        // Mostrar el indicador de carga
+        loadingIndicator.style.display = 'flex';
+    
+        // Mostrar éxito si todos los campos son válidos
+        if (isValid) {
+            // Datos del formulario
+            const formData = { url: audioUrl };
+    
+            try {
+                // Llamada a la API de transcripción
+                const responseTranscribe = await fetch('/transcribe', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData),
+                });
+    
+                if (!responseTranscribe.ok) {
+                    const errorData = await responseTranscribe.json();
+                    throw new Error(errorData.error || 'Error al transcribir el audio.');
+                }
+    
+                const dataTranscribe = await responseTranscribe.json();
+    
+                if (dataTranscribe.transcript) {
+                    const transcriptText = dataTranscribe.transcript; // Asignar la transcripción a una variable
+                    //showMessage('Transcripción exitosa.', 'success');
+                    console.log('Transcripción:', transcriptText);
+    
+                    // Llamada a la API para generar preguntas
+                    const responseGenerate = await fetch('/generate-questions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            content: `${transcriptText} Según el texto que tienes anteriormente puedes generarme las preguntas y las opciones de respuestas de manera ordenada.`,
+                        }),
+                    });
+    
+                    if (!responseGenerate.ok) {
+                        const errorData = await responseGenerate.json();
+                        throw new Error(errorData.error || 'Error al generar preguntas.');
+                    }
+    
+                    const dataGenerate = await responseGenerate.json();
+    
+                    if (dataGenerate.texto) {
+                        // Mostrar las preguntas generadas
+                        /* const questionsContainer = document.getElementById('questions-container');
+                        questionsContainer.textContent = dataGenerate.texto; // Renderizar las preguntas generadas */
+                        console.log(dataGenerate.texto);
+                        showMessage('Preguntas generadas con éxito.', 'success');
+                    } else {
+                        throw new Error('No se pudieron generar preguntas.');
+                    }
+                } else {
+                    throw new Error('No se pudo obtener la transcripción.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                errorProceso.textContent = error.message || 'Hubo un problema con la conexión al servidor.';
+            } finally {
+                // Ocultar el indicador de carga
+                loadingIndicator.style.display = 'none';
+            }
+        } else {
+            loadingIndicator.style.display = 'none'; // Ocultar el indicador de carga si no es válido
+        }
+    });
+
+    /* document.getElementById('create-project-video-button').addEventListener('click', async (e) => {
             e.preventDefault(); // Prevenir el comportamiento predeterminado
         // Resetear mensajes de error
 
@@ -1604,7 +1697,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Mostrar el indicador de carga
         loadingIndicator.style.display = 'flex';
-        transcriptResult.textContent = ''; // Limpiar cualquier resultado previo
 
         // Mostrar éxito si todos los campos son válidos
         if (isValid) {
@@ -1635,7 +1727,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const transcriptText = data.transcript; // Asignar la transcripción a una variable
                         console.log('Transcripción:', transcriptText); // Para debug o uso adicional
                         // Opcional: Mostrar en un campo de texto o elemento del DOM
-                        document.getElementById('transcript-result').textContent = transcriptText;
+                        
                     } else {
                         showMessage('No se pudo obtener la transcripción.', 'error');
                     }
@@ -1647,7 +1739,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
         }
 
-    });
+    });  */
 
     /* document.getElementById('update-project-button').addEventListener('click', async (e) => {
         e.preventDefault(); // Prevenir el comportamiento predeterminado
