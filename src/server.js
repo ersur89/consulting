@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt'); // Importar bcrypt para el cifrado
 const path = require('path');
 const bodyParser = require('body-parser');
+const { AssemblyAI } = require('assemblyai');
 const db = require(path.join(__dirname, 'config', 'db'));
 
 const app = express();
@@ -11,6 +12,66 @@ const PORT = 3000;
 app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json()); // Asegúrate de manejar JSON en el servidor
+
+//Transcribe
+app.post('/transcribe', async (req, res) => {
+    const { url } = req.body;
+
+    // Validar que la URL esté presente
+    if (!url) {
+        return res.status(400).json({
+            success: false,
+            message: "La URL del audio o video no fue proporcionada."
+        });
+    }
+
+    // Configuración del cliente de AssemblyAI
+    const client = new AssemblyAI({ apiKey: "a243419e926d4867b0a14a8bfee852b1" });
+    const config = {
+        audio_url: url,
+        language_code: 'es',
+        audio_end_at: 280000, // Tiempo en milisegundos
+        audio_start_from: 10   // Tiempo en milisegundos
+    };
+
+    try {
+        // Realizar la transcripción
+        const transcript = await client.transcripts.transcribe(config);
+
+        // Verificar si se obtuvo un texto
+        if (!transcript.text) {
+            return res.status(500).json({
+                success: false,
+                message: "No se pudo obtener el texto de la transcripción."
+            });
+        }
+
+        // Respuesta exitosa
+        return res.status(200).json({
+            success: true,
+            transcript: transcript.text
+        });
+    } catch (error) {
+        console.error("Error al transcribir el audio o video:", error);
+
+        // Manejo de errores
+        if (error.response && error.response.data) {
+            return res.status(500).json({
+                success: false,
+                message: "Error en la respuesta de AssemblyAI.",
+                details: error.response.data
+            });
+        } else {
+            return res.status(500).json({
+                success: false,
+                message: "Error inesperado al procesar la transcripción."
+            });
+        }
+    }
+});
+
+
+
 
 // Ruta para el formulario de login
 app.get('/', (req, res) => {
@@ -42,7 +103,7 @@ app.post('/validate-login', (req, res) => {
 });
 
 // Ruta para crear o actualizar cliente y proyecto
-app.post('/crear-proyecto', (req, res) => {
+/* app.post('/crear-proyecto', (req, res) => {
     const { nombreProyecto, descripcion, rucCedula, nombreCliente, direccion, telefono, correo } = req.body;
 
     // Validar que el cliente exista
@@ -104,7 +165,9 @@ app.post('/crear-proyecto', (req, res) => {
             });
         }
     });
-});
+}); */
+// =========================================================================================================
+// =================================BLOQUE DE USUARIO=========================================
 
 //TRAE USUARIOS
 app.get('/api/usuarios', (req, res) => {
@@ -465,6 +528,305 @@ app.put('/api/usuarios-edit/:usuario', async (req, res) => {
         res.status(500).json({ message: 'Error interno del servidor.' });
     }
 });
+//================
+//===================================================================================================================
+
+//===================================================================================================================
+//===============================BLOQUE DE PROYECTO==================================================================
+
+// Obtener todos los proyectos con detalles del cliente
+app.get('/api/proyectos', (req, res) => {
+    const sql = `
+        SELECT 
+            p.id_proyecto,
+            p.nombre AS proyecto_nombre,
+            c.nombre AS cliente_nombre,
+            c.cedula_ruc,
+            c.telefono,
+            c.correo,
+            p.estado,
+            p.descripcion,
+            p.fecha_ingreso
+        FROM com_proyecto p
+        LEFT JOIN com_cliente c ON p.id_cliente = c.id_cliente
+    `;
+    db.query(sql, (err, results) => {
+        if (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Error al obtener los proyectos.' });
+        } else {
+            res.json(results);
+        }
+    });
+});
+
+// Obtener un proyecto específico con detalles del cliente
+app.get('/api/proyectos/:id', (req, res) => {
+    const sql = `
+        SELECT 
+            p.id_proyecto,
+            p.nombre AS proyecto_nombre,
+            c.nombre AS cliente_nombre,
+            c.cedula_ruc,
+            c.direccion,
+            c.telefono,
+            c.correo,
+            p.estado,
+            p.descripcion,
+            p.fecha_ingreso
+        FROM com_proyecto p
+        LEFT JOIN com_cliente c ON p.id_cliente = c.id_cliente
+        WHERE p.id_proyecto = ?
+    `;
+    db.query(sql, [req.params.id], (err, result) => {
+        if (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Error al obtener el proyecto.' });
+        } else if (result.length === 0) {
+            res.status(404).json({ error: 'Proyecto no encontrado.' });
+        } else {
+            res.json(result[0]);
+        }
+    });
+});
+
+// Crear un nuevo proyecto
+app.post('/api/proyectos', (req, res) => {
+    const { projectName, description, ruc, clientName, address, phone, email, status } = req.body;
+
+    // Validar que el cliente exista
+    const queryCliente = `SELECT * FROM com_cliente WHERE cedula_ruc = ?`;
+    db.query(queryCliente, [ruc], (err, results) => {
+        if (err) {
+            return res.status(500).json({ error: 'Error al buscar cliente' });
+        }
+
+        if (results.length > 0) {
+            // Si el cliente existe, actualizarlo
+            const clienteId = results[0].id_cliente;
+            const updateCliente = `
+                UPDATE com_cliente SET 
+                    nombre = ?, 
+                    direccion = ?, 
+                    telefono = ?, 
+                    correo = ? 
+                WHERE id_cliente = ?
+            `;
+            db.query(updateCliente, [clientName, address, phone, email, clienteId], (err) => {
+                if (err) {
+                    return res.status(500).json({ error: 'Error al actualizar cliente' });
+                }
+
+                // Insertar o actualizar proyecto asociado
+                insertarActualizarProyecto(clienteId);
+            });
+        } else {
+            // Si el cliente no existe, crearlo
+            const insertCliente = `
+                INSERT INTO com_cliente (cedula_ruc, nombre, direccion, telefono, correo)
+                VALUES (?, ?, ?, ?, ?)
+            `;
+            db.query(insertCliente, [ruc, clientName, address, phone, email], (err, result) => {
+                if (err) {
+                    return res.status(500).json({ error: 'Error al crear cliente' });
+                }
+
+                const clienteId = result.insertId;
+
+                // Insertar proyecto asociado
+                insertarActualizarProyecto(clienteId);
+            });
+        }
+
+        // Función para insertar o actualizar proyecto
+        function insertarActualizarProyecto(clienteId) {
+            const queryProyecto = `SELECT * FROM com_proyecto WHERE nombre = ? AND id_cliente = ?`;
+            db.query(queryProyecto, [projectName, clienteId], (err, results) => {
+                if (err) {
+                    return res.status(500).json({ error: 'Error al buscar proyecto' });
+                }
+
+                if (results.length > 0) {
+                    // Si el proyecto ya existe, actualizarlo
+                    const updateProyecto = `
+                        UPDATE com_proyecto SET 
+                            descripcion = ?, 
+                            estado = ? 
+                        WHERE id_proyecto = ?
+                    `;
+                    db.query(updateProyecto, [description, status, results[0].id_proyecto], (err) => {
+                        if (err) {
+                            return res.status(500).json({ error: 'Error al actualizar proyecto' });
+                        }
+
+                        return res.status(200).json({ message: 'Proyecto actualizado con éxito', success: true });
+                    });
+                } else {
+                    // Si el proyecto no existe, crearlo
+                    const insertProyecto = `
+                        INSERT INTO com_proyecto (nombre, descripcion, id_cliente, estado)
+                        VALUES (?, ?, ?, ?)
+                    `;
+                    db.query(insertProyecto, [projectName, description, clienteId, status], (err) => {
+                        if (err) {
+                            return res.status(500).json({ error: 'Error al crear proyecto' });
+                        }
+
+                        return res.status(200).json({ message: 'Proyecto creado con éxito', success: true });
+                    });
+                }
+            });
+        }
+    });
+});
+
+// Actualizar un proyecto existente
+app.put('/api/proyectos/:idProyecto', (req, res) => {
+    const { idProyecto } = req.params;
+    const { nombreProyecto, descripcion, rucCedula, nombreCliente, direccion, telefono, correo } = req.body;
+
+    if (!idProyecto || !rucCedula || !nombreCliente || !nombreProyecto) {
+        return res.status(400).json({ message: "ID del proyecto, Cédula/RUC, nombre del cliente y nombre del proyecto son obligatorios." });
+    }
+
+    // Buscar el cliente por su cédula o RUC
+    const queryCliente = `SELECT * FROM com_cliente WHERE cedula_ruc = ?`;
+    db.query(queryCliente, [rucCedula], (err, results) => {
+        if (err) {
+            console.error('Error al buscar el cliente:', err);
+            return res.status(500).json({ message: "Error al buscar cliente." });
+        }
+
+        if (results.length > 0) {
+            // El cliente existe, actualizarlo
+            const clienteId = results[0].id_cliente;
+            const updateCliente = `
+                UPDATE com_cliente
+                SET nombre = ?, direccion = ?, telefono = ?, correo = ?
+                WHERE id_cliente = ?
+            `;
+            db.query(updateCliente, [nombreCliente, direccion, telefono, correo, clienteId], (err) => {
+                if (err) {
+                    console.error('Error al actualizar cliente:', err);
+                    return res.status(500).json({ message: "Error al actualizar cliente." });
+                }
+
+                // Actualizar el proyecto
+                actualizarProyecto(clienteId);
+            });
+        } else {
+            // El cliente no existe, crearlo
+            const insertCliente = `
+                INSERT INTO com_cliente (cedula_ruc, nombre, direccion, telefono, correo)
+                VALUES (?, ?, ?, ?, ?)
+            `;
+            db.query(insertCliente, [rucCedula, nombreCliente, direccion, telefono, correo], (err, result) => {
+                if (err) {
+                    console.error('Error al crear cliente:', err);
+                    return res.status(500).json({ message: "Error al crear cliente." });
+                }
+
+                const clienteId = result.insertId;
+
+                // Actualizar el proyecto
+                actualizarProyecto(clienteId);
+            });
+        }
+
+        // Función para actualizar proyecto
+        function actualizarProyecto(clienteId) {
+            const updateProyecto = `
+                UPDATE com_proyecto
+                SET nombre = ?, descripcion = ?, id_cliente = ?
+                WHERE id_proyecto = ?
+            `;
+            db.query(updateProyecto, [nombreProyecto, descripcion, clienteId, idProyecto], (err) => {
+                if (err) {
+                    console.error('Error al actualizar proyecto:', err);
+                    return res.status(500).json({ message: "Error al actualizar proyecto." });
+                }
+
+                return res.status(200).json({ message: "Proyecto actualizado exitosamente." });
+            });
+        }
+    });
+});
+
+
+///Trae todos los Clientes
+app.get('/api/clientes', (req, res) => {
+    const searchQuery = req.query.q; // Entrada del usuario
+
+    const query = `
+        SELECT cedula_ruc, nombre, direccion, correo, telefono
+        FROM com_cliente
+        WHERE cedula_ruc LIKE ? OR nombre LIKE ?
+        LIMIT 10
+    `;
+
+    db.query(query, [`%${searchQuery}%`, `%${searchQuery}%`], (err, results) => {
+        if (err) {
+            return res.status(500).json({ error: 'Error al buscar clientes' });
+        }
+
+        res.status(200).json(results);
+    });
+});
+
+// Eliminar un proyecto
+app.delete('/api/proyectos/:id', (req, res) => {
+    const sql = 'DELETE FROM com_proyecto WHERE id_proyecto = ?';
+    db.query(sql, [req.params.id], (err, result) => {
+        if (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Error al eliminar el proyecto.' });
+        } else if (result.affectedRows === 0) {
+            res.status(404).json({ error: 'Proyecto no encontrado.' });
+        } else {
+            res.json({ success: true, message: 'Proyecto eliminado exitosamente.' });
+        }
+    });
+});
+
+
+
+//===================================================================================================================
+
+
+//============================================================================================================
+// BLOQUE DE GENERA VIDEOS
+
+// Obtener todos los proyectos con transcripcion
+app.get('/api/proyectos-videos', (req, res) => {
+    const sql = `
+        SELECT 
+            p.id_proyecto,
+            p.nombre AS proyecto_nombre,
+            c.nombre AS cliente_nombre,
+            c.cedula_ruc,
+            c.telefono,
+            c.correo,
+            p.estado,
+            p.descripcion,
+            p.fecha_ingreso,
+            CASE 
+                WHEN t.generado = 'S' THEN 'S'
+                ELSE 'N'
+            END AS generado
+        FROM com_proyecto p
+        LEFT JOIN com_cliente c ON p.id_cliente = c.id_cliente
+        LEFT JOIN com_transcripcion t ON t.id_proyecto = p.id_proyecto
+    `;
+    db.query(sql, (err, results) => {
+        if (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Error al obtener los proyectos.' });
+        } else {
+            res.json(results);
+        }
+    });
+});
+
 
 
 // Iniciar el servidor
