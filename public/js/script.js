@@ -1162,51 +1162,83 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault(); // Prevenir el comportamiento predeterminado
     
         const projectForm = document.getElementById('project-form');
-        if (!projectForm) {
+        if (!document.getElementById('project-name').value.trim()) {
             showMessage("No se pudo encontrar el formulario. Inténtelo de nuevo.", "error");
             return;
         }
-    
-        const projectData = {
-            idProyecto: document.getElementById('project-id').value.trim(), // Capturamos el ID del proyecto
-            nombreProyecto: document.getElementById('project-name').value.trim(),
-            nombreCliente: document.getElementById('client-name').value.trim(),
-            rucCedula: document.getElementById('ruc').value.trim(),
-            direccion: document.getElementById('address').value.trim(),
-            telefono: document.getElementById('phone').value.trim(),
-            correo: document.getElementById('email').value.trim(),
-            descripcion: document.getElementById('description').value.trim(),
-        };
-    
-        try {
-            const response = await fetch(`/api/proyectos/${projectData.idProyecto}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(projectData),
-            });
-    
-            const data = await response.json();
-    
-            if (response.ok) {
-                showMessage(data.message || 'Proyecto actualizado exitosamente.', 'success');
-                projectForm.reset(); // Limpiar el formulario
-                popupOverlay.style.display = 'none'; // Cerrar el popup
-                await loadProjects(); // Recargar la lista de proyectos
-            } else {
-                showMessage(data.message || 'Error al actualizar el proyecto.', 'error');
-                if (data.rucCedula) {
-                    document.getElementById('error-ruc').textContent = data.rucCedula;
-                }
-                if (data.nombreCliente) {
-                    document.getElementById('error-client-name').textContent = data.nombreCliente;
-                }
-            }
-        } catch (error) {
-            console.error('Error al actualizar el proyecto:', error);
-            showMessage('Hubo un problema. No se pudo actualizar el proyecto.', 'error');
+
+        let isValid = true;
+
+        // Validar nombre del proyecto
+        if (!document.getElementById('project-name').value.trim()) {
+            document.getElementById('error-project-name').textContent = 'El nombre del proyecto es obligatorio.';
+            isValid = false;
         }
+
+        // Validar Cédula o RUC
+        if (!/^\d{10,13}$/.test(document.getElementById('ruc').value.trim())) {
+            document.getElementById('error-ruc').textContent = 'La cédula o RUC debe contener entre 10 y 13 números.';
+            isValid = false;
+        }
+
+        // Validar nombre del cliente
+        if (!document.getElementById('client-name').value.trim()) {
+            document.getElementById('error-client-name').textContent = 'El nombre del cliente es obligatorio.';
+            isValid = false;
+        }
+
+        // Validar dirección
+        if (!document.getElementById('address').value.trim()) {
+            document.getElementById('error-address').textContent = 'La dirección del cliente es obligatoria.';
+            isValid = false;
+        }
+
+        if(isValid){
+            const projectData = {
+                idProyecto: document.getElementById('project-id').value.trim(), // Capturamos el ID del proyecto
+                nombreProyecto: document.getElementById('project-name').value.trim(),
+                nombreCliente: document.getElementById('client-name').value.trim(),
+                rucCedula: document.getElementById('ruc').value.trim(),
+                direccion: document.getElementById('address').value.trim(),
+                telefono: document.getElementById('phone').value.trim(),
+                correo: document.getElementById('email').value.trim(),
+                descripcion: document.getElementById('description').value.trim(),
+            };
+        
+            try {
+                const response = await fetch(`/api/proyectos/${projectData.idProyecto}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(projectData),
+                });
+        
+                const data = await response.json();
+        
+                if (response.ok) {
+                    showMessage(data.message || 'Proyecto actualizado exitosamente.', 'success');
+                    projectForm.reset(); // Limpiar el formulario
+                    popupOverlay.style.display = 'none'; // Cerrar el popup
+                    await loadProjects(); // Recargar la lista de proyectos
+                } else {
+                    showMessage(data.message || 'Error al actualizar el proyecto.', 'error');
+                    /* if (data.rucCedula) {
+                        document.getElementById('error-ruc').textContent = data.rucCedula;
+                    }
+                    if (data.nombreCliente) {
+                        document.getElementById('error-client-name').textContent = data.nombreCliente;
+                    }
+                    if (data.nombreCliente) {
+                        document.getElementById('error-client-name').textContent = data.nombreCliente;
+                    } */
+                }
+            } catch (error) {
+                console.error('Error al actualizar el proyecto:', error);
+                showMessage('Hubo un problema. No se pudo actualizar el proyecto.', 'error');
+            }
+        }
+   
     });
 
     if (menuProyectos) {
@@ -1256,66 +1288,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         projectIdField.value = project ? project.id_proyecto : ''; // Asignar el ID del proyecto si existe
-
-        /* document.getElementById('ruc').addEventListener('input', async (e) => {
-            const input = e.target.value.trim();
-            const suggestionList = document.getElementById('ruc-suggestions');
-        
-            // Si el campo está vacío, limpiar las sugerencias
-            if (input === '') {
-                suggestionList.innerHTML = '';
-                return;
-            }
-        
-            try {
-                // Realizar la solicitud al servidor
-                const response = await fetch(`/api/clientes?q=${encodeURIComponent(input)}`);
-                if (!response.ok) throw new Error('Error al obtener sugerencias');
-        
-                const clientes = await response.json();
-        
-                // Limpiar las opciones actuales
-                suggestionList.innerHTML = '';
-        
-                // Agregar las nuevas opciones
-                clientes.forEach(cliente => {
-                    const option = document.createElement('option');
-                    option.value = cliente.cedula_ruc; // Mostrar cédula
-                    option.textContent = `${cliente.cedula_ruc} - ${cliente.nombre}`; // Mostrar cédula y nombre
-                    option.dataset.cliente = JSON.stringify(cliente); // Guardar datos completos en un atributo
-                    suggestionList.appendChild(option);
-                });
-            } catch (error) {
-                showMessage('Error al obtener sugerencias de clientes.', 'error');
-            }
-        });
-
-        // Llenar los campos al seleccionar un cliente
-        document.getElementById('ruc').addEventListener('change', (e) => {
-            const selectedValue = e.target.value;
-            const suggestionList = document.getElementById('ruc-suggestions');
-
-            // Buscar el cliente correspondiente en la lista
-            const selectedOption = Array.from(suggestionList.children).find(
-                option => option.value === selectedValue
-            );
-
-            if (selectedOption) {
-                const cliente = JSON.parse(selectedOption.dataset.cliente);
-
-                // Llenar los campos con los datos del cliente
-                document.getElementById('client-name').value = cliente.nombre || '';
-                document.getElementById('address').value = cliente.direccion || '';
-                document.getElementById('phone').value = cliente.telefono || '';
-                document.getElementById('email').value = cliente.correo || '';
-            } else {
-                // Si no se encuentra el cliente, limpiar los campos
-                document.getElementById('client-name').value = '';
-                document.getElementById('address').value = '';
-                document.getElementById('phone').value = '';
-                document.getElementById('email').value = '';
-            }
-        }); */
 
         if (mode === 'create') {
             /* title.textContent = 'Nuevo Proyecto'; // Cambia el título
@@ -1595,10 +1567,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
         // Resetear mensajes de error
         document.querySelectorAll('.error-message').forEach((msg) => (msg.textContent = ''));
-    
         const audioUrl = document.getElementById('link').value.trim(); // Obtener el enlace del audio
         const loadingIndicator = document.getElementById('loading-indicator'); // Indicador de carga
         const errorProceso = document.getElementById('error-proceso'); // Elemento para mostrar errores del proceso
+        const idProyecto   = document.getElementById('id-proyect').value.trim();
         let isValid = true;
     
         // Validar el enlace
@@ -1659,6 +1631,41 @@ document.addEventListener('DOMContentLoaded', () => {
                         // Mostrar las preguntas generadas
                         /* const questionsContainer = document.getElementById('questions-container');
                         questionsContainer.textContent = dataGenerate.texto; // Renderizar las preguntas generadas */
+
+                        const transcriptText = dataGenerate.texto;
+                        // Llamada para guardar la transcripción
+                        fetch('/save-transcription', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                idProyecto: idProyecto, // Asegúrate de tener este valor disponible
+                                texto: transcriptText,
+                            }),
+                        })
+                            .then((response) => {
+                                if (response.ok) {
+                                    return response.json(); // Parsear la respuesta del servidor
+                                } else {
+                                    throw new Error('No se pudo guardar la transcripción.');
+                                }
+                            })
+                            .then((dataSave) => {
+                                console.log('Transcripción guardada:', dataSave);
+                                projectForm.reset(); // Limpiar el formulario
+                                popupOverlay.style.display = 'none'; // Cerrar el popup
+                                showMessage(dataSave.message, 'success');
+                                
+                                // Opcional: usar el ID de la transcripción
+                                const idTranscripcion = dataSave.idTranscripcion;
+
+                                // Aquí puedes llamar a la función para guardar preguntas si lo necesitas
+                            })
+                            .catch((error) => {
+                                console.error('Error al guardar la transcripción:', error);
+                                showMessage('Error al guardar la transcripción.', 'error');
+                            });
                         console.log(dataGenerate.texto);
                         showMessage('Preguntas generadas con éxito.', 'success');
                     } else {
@@ -1679,118 +1686,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    /* document.getElementById('create-project-video-button').addEventListener('click', async (e) => {
-            e.preventDefault(); // Prevenir el comportamiento predeterminado
-        // Resetear mensajes de error
-
-        console.log("entrasss");
-        document.querySelectorAll('.error-message').forEach((msg) => (msg.textContent = ''));
-
-        const audioUrl = document.getElementById('link').value.trim(); // Obtener el enlace del audio
-        let isValid = true;
-
-        // Validar el enlace
-        if (!audioUrl || !/^https?:\/\/.+$/.test(audioUrl)) {
-            document.getElementById('error-link').textContent = 'El enlace debe ser una URL válida.';
-            isValid = false;
-        }
-
-        // Mostrar el indicador de carga
-        loadingIndicator.style.display = 'flex';
-
-        // Mostrar éxito si todos los campos son válidos
-        if (isValid) {
-            // Datos del formulario
-            const formData = {
-                url: audioUrl,
-            };
-
-            // Llamada al servidor usando fetch
-            fetch('/transcribe', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData),
-            })
-                .then((response) => {
-                    if (response.ok) {
-                        return response.json(); // Parsear JSON si el servidor responde con éxito
-                    } else {
-                        throw new Error('Error al transcribir el audio. Verifique el enlace e intente nuevamente.');
-                    }
-                })
-                .then((data) => {
-                    // Mostrar mensaje de éxito o manejar la respuesta del servidor
-                    if (data.transcript) {
-                        showMessage('Transcripción exitosa.', 'success');
-                        const transcriptText = data.transcript; // Asignar la transcripción a una variable
-                        console.log('Transcripción:', transcriptText); // Para debug o uso adicional
-                        // Opcional: Mostrar en un campo de texto o elemento del DOM
-                        
-                    } else {
-                        showMessage('No se pudo obtener la transcripción.', 'error');
-                    }
-                })
-                .catch((error) => {
-                    // Manejo de errores de red o del servidor
-                    console.error('Error:', error);
-                    showMessage('Hubo un problema con la conexión al servidor.', 'error');
-                });
-        }
-
-    });  */
-
-    /* document.getElementById('update-project-button').addEventListener('click', async (e) => {
-        e.preventDefault(); // Prevenir el comportamiento predeterminado
-    
-        const projectForm = document.getElementById('project-form');
-        if (!projectForm) {
-            showMessage("No se pudo encontrar el formulario. Inténtelo de nuevo.", "error");
-            return;
-        }
-    
-        const projectData = {
-            idProyecto: document.getElementById('project-id').value.trim(), // Capturamos el ID del proyecto
-            nombreProyecto: document.getElementById('project-name').value.trim(),
-            nombreCliente: document.getElementById('client-name').value.trim(),
-            rucCedula: document.getElementById('ruc').value.trim(),
-            direccion: document.getElementById('address').value.trim(),
-            telefono: document.getElementById('phone').value.trim(),
-            correo: document.getElementById('email').value.trim(),
-            descripcion: document.getElementById('description').value.trim(),
-        };
-    
-        try {
-            const response = await fetch(`/api/proyectos/${projectData.idProyecto}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(projectData),
-            });
-    
-            const data = await response.json();
-    
-            if (response.ok) {
-                showMessage(data.message || 'Proyecto actualizado exitosamente.', 'success');
-                projectForm.reset(); // Limpiar el formulario
-                popupOverlay.style.display = 'none'; // Cerrar el popup
-                await loadProjects(); // Recargar la lista de proyectos
-            } else {
-                showMessage(data.message || 'Error al actualizar el proyecto.', 'error');
-                if (data.rucCedula) {
-                    document.getElementById('error-ruc').textContent = data.rucCedula;
-                }
-                if (data.nombreCliente) {
-                    document.getElementById('error-client-name').textContent = data.nombreCliente;
-                }
-            }
-        } catch (error) {
-            console.error('Error al actualizar el proyecto:', error);
-            showMessage('Hubo un problema. No se pudo actualizar el proyecto.', 'error');
-        }
-    }); */
 
     if (menuProyectosVideos) {
         menuProyectosVideos.addEventListener('click', async (e) => {

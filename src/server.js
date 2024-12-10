@@ -15,62 +15,7 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json()); // Asegúrate de manejar JSON en el servidor
 
-//Transcribe
-app.post('/transcribe', async (req, res) => {
-    const { url } = req.body;
 
-    // Validar que la URL esté presente
-    if (!url) {
-        return res.status(400).json({
-            success: false,
-            message: "La URL del audio o video no fue proporcionada."
-        });
-    }
-
-    // Configuración del cliente de AssemblyAI
-    const client = new AssemblyAI({ apiKey: "a243419e926d4867b0a14a8bfee852b1" });
-    const config = {
-        audio_url: url,
-        language_code: 'es',
-        audio_end_at: 280000, // Tiempo en milisegundos
-        audio_start_from: 10   // Tiempo en milisegundos
-    };
-
-    try {
-        // Realizar la transcripción
-        const transcript = await client.transcripts.transcribe(config);
-
-        // Verificar si se obtuvo un texto
-        if (!transcript.text) {
-            return res.status(500).json({
-                success: false,
-                message: "No se pudo obtener el texto de la transcripción."
-            });
-        }
-
-        // Respuesta exitosa
-        return res.status(200).json({
-            success: true,
-            transcript: transcript.text
-        });
-    } catch (error) {
-        console.error("Error al transcribir el audio o video:", error);
-
-        // Manejo de errores
-        if (error.response && error.response.data) {
-            return res.status(500).json({
-                success: false,
-                message: "Error en la respuesta de AssemblyAI.",
-                details: error.response.data
-            });
-        } else {
-            return res.status(500).json({
-                success: false,
-                message: "Error inesperado al procesar la transcripción."
-            });
-        }
-    }
-});
 
 
 
@@ -859,6 +804,137 @@ app.post('/generate-questions', async (req, res) => {
         res.status(500).json({ error: "Error al generar las preguntas" });
     }
 });
+
+
+//Transcribe
+app.post('/transcribe', async (req, res) => {
+    const { url } = req.body;
+
+    // Validar que la URL esté presente
+    if (!url) {
+        return res.status(400).json({
+            success: false,
+            message: "La URL del audio o video no fue proporcionada."
+        });
+    }
+
+    // Configuración del cliente de AssemblyAI
+    const client = new AssemblyAI({ apiKey: "a243419e926d4867b0a14a8bfee852b1" });
+    const config = {
+        audio_url: url,
+        language_code: 'es',
+        audio_end_at: 280000, // Tiempo en milisegundos
+        audio_start_from: 10   // Tiempo en milisegundos
+    };
+
+    try {
+        // Realizar la transcripción
+        const transcript = await client.transcripts.transcribe(config);
+
+        // Verificar si se obtuvo un texto
+        if (!transcript.text) {
+            return res.status(500).json({
+                success: false,
+                message: "No se pudo obtener el texto de la transcripción."
+            });
+        }
+
+        // Respuesta exitosa
+        return res.status(200).json({
+            success: true,
+            transcript: transcript.text
+        });
+    } catch (error) {
+        console.error("Error al transcribir el audio o video:", error);
+
+        // Manejo de errores
+        if (error.response && error.response.data) {
+            return res.status(500).json({
+                success: false,
+                message: "Error en la respuesta de AssemblyAI.",
+                details: error.response.data
+            });
+        } else {
+            return res.status(500).json({
+                success: false,
+                message: "Error inesperado al procesar la transcripción."
+            });
+        }
+    }
+});
+
+//Crea registro em transcripcion
+
+app.post('/save-transcription', (req, res) => {
+    const { idProyecto, texto } = req.body;
+
+    if (!idProyecto || texto === undefined) {
+        return res.status(400).json({ error: 'Datos insuficientes para guardar la transcripción.' });
+    }
+
+    // Convertir el texto a string si es un objeto
+    const textoStr = typeof texto === 'object' ? JSON.stringify(texto) : texto;
+
+    // Obtener el siguiente ID de transcripción
+    const getNextTranscriptionId = (idProyecto, callback) => {
+        const query = `
+            SELECT COALESCE(MAX(id_transcripcion), 0) + 1 AS next_id_transcripcion
+            FROM com_transcripcion
+            WHERE id_proyecto = ?;
+        `;
+        db.query(query, [idProyecto], (err, results) => {
+            if (err) {
+                console.error('Error al obtener el siguiente ID de transcripción:', err);
+                return callback(err);
+            }
+            const nextId = results[0].next_id_transcripcion;
+            callback(null, nextId);
+        });
+    };
+
+    // Guardar la transcripción
+    getNextTranscriptionId(idProyecto, (err, idTranscripcion) => {
+        if (err) {
+            return res.status(500).json({ error: 'Error al obtener el siguiente ID de transcripción.' });
+        }
+
+        const query = `
+            INSERT INTO com_transcripcion 
+            (id_proyecto, id_transcripcion, texto, generado, estado, usuario_ingreso) 
+            VALUES (?, ?, ?, 
+                CASE 
+                    WHEN ? = '' THEN 'N' 
+                    ELSE 'S' 
+                END, 
+                'ACTIVO', 'user1')
+            ON DUPLICATE KEY UPDATE 
+                texto = VALUES(texto),
+                generado = CASE 
+                    WHEN VALUES(texto) = '' THEN 'N' 
+                    ELSE 'S' 
+                END,
+                estado = 'ACTIVO',
+                usuario_modificacion = 'user1',
+                fecha_modificacion = NOW()
+        `;
+
+        const values = [idProyecto, idTranscripcion, textoStr, textoStr];
+
+        db.query(query, values, (err, results) => {
+            if (err) {
+                console.error('Error al guardar la transcripción:', err);
+                return res.status(500).json({ error: 'Error interno al guardar la transcripción.' });
+            }
+
+            res.status(200).json({
+                message: 'Transcripción guardada exitosamente.',
+                idTranscripcion: idTranscripcion,
+            });
+        });
+    });
+});
+
+
 
 // Iniciar el servidor
 app.listen(PORT, () => {
