@@ -5,6 +5,9 @@ const bodyParser = require('body-parser');
 const { AssemblyAI } = require('assemblyai');
 const { CohereClientV2 } = require('cohere-ai'); 
 
+const PDFDocument = require('pdfkit');
+const fs = require('fs');
+
 const db = require(path.join(__dirname, 'config', 'db'));
 
 const app = express();
@@ -759,7 +762,8 @@ app.get('/api/proyectos-videos', (req, res) => {
             CASE 
                 WHEN t.generado = 'S' THEN 'S'
                 ELSE 'N'
-            END AS generado
+            END AS generado,
+            t.id_transcripcion
         FROM com_proyecto p
         LEFT JOIN com_cliente c ON p.id_cliente = c.id_cliente
         LEFT JOIN com_transcripcion t ON t.id_proyecto = p.id_proyecto
@@ -877,11 +881,17 @@ app.post('/save-transcription', (req, res) => {
 
     // Obtener el siguiente ID de transcripción
     const getNextTranscriptionId = (idProyecto, callback) => {
-        const query = `
+        /* const query = `
             SELECT COALESCE(MAX(id_transcripcion), 0) + 1 AS next_id_transcripcion
             FROM com_transcripcion
             WHERE id_proyecto = ?;
-        `;
+        `; */
+
+        const query = `
+            SELECT COALESCE(MAX(id_transcripcion), 0) + 1 AS next_id_transcripcion
+            FROM com_transcripcion;
+        `; 
+        
         db.query(query, [idProyecto], (err, results) => {
             if (err) {
                 console.error('Error al obtener el siguiente ID de transcripción:', err);
@@ -948,9 +958,9 @@ function procesarPreguntasYRespuestas(jsonContent, idProyecto, idTranscripcion) 
 
     lineas.forEach((linea, index) => {
         const preguntaMatch = linea.match(/^\d+\.\s(.+)/); // Detectar preguntas
-        const opcionMatch = linea.match(/^\s*-\s*[a-d]\)\s*(.+?)\s*\((\d+)\)\s*$/); // Detectar opciones con coincidencias
+        const opcionMatch = linea.match(/^\s*-\s*[a-dA-D]\)\s*(.+?)\s*\((\d+)\)\s*$/); // Detectar opciones con coincidencias
 
-        //console.log(`Procesando línea ${index + 1}: "${linea}"`);
+        console.log(`Procesando línea ${index + 1}: "${linea}"`);
         if (preguntaMatch) {
             // Si es una pregunta, guardar la anterior y empezar una nueva
             if (preguntaActual) {
@@ -965,7 +975,7 @@ function procesarPreguntasYRespuestas(jsonContent, idProyecto, idTranscripcion) 
             };
         } else if (opcionMatch && preguntaActual) {
             // Si es una opción, agregarla a la pregunta actual
-            
+            console.log("Alternativa:", opcionMatch);
             const [, descripcion, coincidencias] = opcionMatch;
             preguntaActual.opciones.push({
                 idProyecto,
@@ -973,7 +983,7 @@ function procesarPreguntasYRespuestas(jsonContent, idProyecto, idTranscripcion) 
                 idPregunta: preguntaActual.orden,
                 orden: preguntaActual.opciones.length + 1,
                 descripcion: descripcion.trim(),
-                coincidencias: coincidencias ? parseInt(coincidencias, 10) : 0, // Si no hay coincidencias, asumir 0
+                coincidencias: coincidencias ? parseInt(coincidencias.trim(), 10) : 0 , // Si no hay coincidencias, asumir 0
             });
         }else {
             //console.log("No se detectó ni pregunta ni opción para la línea:", linea);
@@ -1017,7 +1027,7 @@ function guardarCuestionarioEnBaseDeDatos(preguntas, opciones) {
         const queryOpcion = `
             INSERT INTO com_cuestionario_alternativa 
             (id_proyecto, id_cuestionario, id_pregunta, id_alternativa, orden, descripcion, coincidencias, estado, usuario_ingreso) 
-            VALUES (?, ?, ?, ?, ?, ?, '0', 'ACTIVO', 'user1')
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'ACTIVO', 'user1')
         `;
 
         db.query(queryOpcion, [
@@ -1056,6 +1066,114 @@ app.post('/guardar-cuestionario', async (req, res) => {
     }
 });
 
+
+//Imprimir reporte de cuestionario
+app.get('/api/generar-reporte/:idProyecto/:idTranscripcion', async (req, res) => {
+    const { idProyecto, idTranscripcion } = req.params;
+
+    try {
+        const query = `
+            SELECT 
+                enc.id_pregunta, 
+                CAST(enc.orden AS SIGNED) AS pregunta_orden,
+                enc.descripcion AS pregunta_descripcion,
+                CAST(alt.orden AS SIGNED) AS alternativa_orden, 
+                alt.descripcion AS alternativa_descripcion, 
+                alt.coincidencias
+            FROM com_cuestionario enc
+            INNER JOIN com_cuestionario_alternativa alt 
+                ON alt.id_cuestionario = enc.id_transcripcion 
+                AND alt.id_proyecto = enc.id_proyecto 
+                AND alt.id_pregunta = enc.id_pregunta
+            WHERE enc.id_proyecto = ? 
+            AND enc.id_transcripcion = ?
+            ORDER BY 
+                CAST(enc.orden AS SIGNED),
+                CAST(alt.orden AS SIGNED);
+
+        `;
+
+        const [rows] = await db.promise().query(query, [idProyecto, idTranscripcion]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'No se encontraron datos para generar el reporte.' });
+        }
+
+        // Crear PDF
+        const doc = new PDFDocument();
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=reporte_proyecto_${idProyecto}.pdf`);
+
+        doc.fontSize(20).text('Reporte de Cuestionario', { align: 'center' });
+        doc.fontSize(12).text(`Proyecto No: ${idProyecto}`);
+        doc.fontSize(12).text(`Cuestionario No: ${idTranscripcion}`);
+        doc.moveDown();
+
+        // Escribir preguntas y alternativas
+        let currentQuestion = null;
+        rows.forEach((row) => {
+            if (currentQuestion !== row.pregunta_orden) {
+                doc.fontSize(14).text(`${row.pregunta_orden}. ${row.pregunta_descripcion}`);
+                currentQuestion = row.pregunta_orden;
+            }
+            doc.fontSize(12).text(`    ${row.alternativa_orden}. ${row.alternativa_descripcion} `);
+           // doc.fontSize(12).text(`    ${row.alternativa_orden}. ${row.alternativa_descripcion} (${row.coincidencias})`);
+        });
+
+        doc.end();
+        doc.pipe(res); // Enviar el PDF al cliente
+
+        /* const preguntasMap = new Map();
+
+        rows.forEach((row) => {
+            if (!preguntasMap.has(row.id_pregunta)) {
+                preguntasMap.set(row.id_pregunta, {
+                    orden: row.pregunta_orden,
+                    descripcion: row.pregunta_descripcion,
+                    opciones: [],
+                });
+            }
+
+            preguntasMap.get(row.id_pregunta).opciones.push({
+                orden: row.alternativa_orden,
+                descripcion: row.alternativa_descripcion,
+                coincidencias: row.coincidencias,
+            });
+        });
+
+        const preguntas = Array.from(preguntasMap.values());
+
+        generarReportePDF(idProyecto, idTranscripcion, preguntas, res); */
+    } catch (error) {
+        console.error('Error al generar el reporte:', error);
+        res.status(500).json({ error: 'Error al generar el reporte' });
+    }
+});
+
+//obtiene id transcripcion
+app.get('/api/proyecto/:idProyecto/transcripcion', async (req, res) => {
+    const idProyecto = req.params.idProyecto;
+
+    try {
+        const query = `
+            SELECT id_transcripcion 
+            FROM com_transcripcion 
+            WHERE id_proyecto = ? 
+            ORDER BY fecha_ingreso DESC 
+            LIMIT 1
+        `;
+        const [rows] = await db.promise().query(query, [idProyecto]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'No se encontró una transcripción asociada.' });
+        }
+
+        res.status(200).json({ idTranscripcion: rows[0].id_transcripcion });
+    } catch (error) {
+        console.error('Error al obtener la transcripción:', error);
+        res.status(500).json({ error: 'Error al obtener la transcripción.' });
+    }
+});
 
 
 // Iniciar el servidor
