@@ -215,9 +215,9 @@
                         <input type="url" id="link" name="link" placeholder="Ingresa un enlace válido" required />
                         <span class="error-message" id="error-link"></span>
                     </div>
-                    <div id="loading-indicator" style="display: none;">
+                    <!-- <div id="loading-indicator" style="display: none;">
                         <span class="loading-text">Loading<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></span>
-                    </div>
+                    </div> -->
                     <span class="error-message" id="error-proceso"></span>  
                     <div class="popup-footer">
                         <button type="submit" id="create-project-video-button" class="button">Generar</button>
@@ -226,7 +226,10 @@
             </div>
         </div>
     </div>
-
+    <div id="loading-indicator" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+        <div class="spinner"></div>
+        <p>Generando reporte...</p>
+    </div>
     <div id="delete-popup" class="popup-overlay" style="display: none;">
         <div class="popup-content-eli">
             <h3>¿Está seguro de que desea eliminar este <span id="delete-entity">usuario</span>?</h3>

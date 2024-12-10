@@ -1414,8 +1414,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div class="project-grid-cell">${project.estado}</div>
                                 <div class="project-grid-cell">${project.generado}</div>
                                 <div class="project-grid-cell">
-                                    <button class="genera-button" title="Generar">
-                                        <i class="fas fa-file-alt"></i>
+                                    <button class="genera-button" title="Generar" ${project.generado === 'S' ? 'disabled' : ''}>
+                                        <i class="fas fa-file-alt" style="${project.generado === 'S' ? 'color: gray;' : ''}"></i>
                                     </button>
                                     <button class="print-button" title="Imprimir">
                                         <i class="fas fa-print"></i>
@@ -1484,22 +1484,100 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
 
-        document.querySelectorAll('.print-button').forEach((button) => {
-            button.addEventListener('click', (e) => {
+        //GENERAR REPORTE DE CUESTIONARIO
+        /* document.querySelectorAll('.print-button').forEach((button) => {
+            button.addEventListener('click', async (e) => {
                 const projectRow = e.target.closest('.project-grid-row');
-                if (projectRow) {
-                    projectIdToDelete = projectRow.dataset.projectId;
-        
-                    // Actualiza el popup dinámicamente
-                    const deleteEntitySpan = document.getElementById('delete-entity');
-                    const deletePopupMessage = document.getElementById('delete-popup-message');
-                    deleteEntitySpan.textContent = 'proyecto';
-                    //deletePopupMessage.textContent = `Proyecto: ${projectRow.querySelector('.project-grid-cell:nth-child(1)').textContent}`;
-        
-                    deletePopup.style.display = 'flex';
+                const idProyecto = projectRow.dataset.projectId;
+                const idTranscripcion = projectRow.dataset.transcriptionId;
+
+                try {
+                    // Mostrar indicador de carga (opcional)
+                    const loadingIndicator = document.getElementById('loading-indicator');
+                    loadingIndicator.style.display = 'flex';
+
+                    const response = await fetch(`/api/generar-reporte/${idProyecto}/${idTranscripcion}`);
+                    if (!response.ok) {
+                        throw new Error('Error al generar el reporte');
+                    }
+
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `reporte_proyecto_${idProyecto}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+
+                    // Ocultar indicador de carga
+                    loadingIndicator.style.display = 'none';
+
+                    showMessage('Reporte descargado exitosamente.', 'success');
+                } catch (error) {
+                    console.error('Error al descargar el reporte:', error);
+                    showMessage('Error al descargar el reporte.', 'error');
+                }
+            });
+        }); */
+
+        document.querySelectorAll('.print-button').forEach((button) => {
+            button.addEventListener('click', async (e) => {
+                const projectRow = e.target.closest('.project-grid-row');
+                const idProyecto = projectRow.dataset.projectId;
+                let idTranscripcion = projectRow.dataset.transcriptionId;
+    
+                try {
+                    // Mostrar indicador de carga (opcional)
+                    const loadingIndicator = document.getElementById('loading-indicator');
+                    if (loadingIndicator) {
+                        loadingIndicator.style.display = 'flex';
+                    }
+    
+                    // Si no tenemos el idTranscripcion, lo consultamos desde el servidor
+                    if (!idTranscripcion) {
+                        const transcripcionResponse = await fetch(`/api/proyecto/${idProyecto}/transcripcion`);
+                        if (!transcripcionResponse.ok) {
+                            throw new Error('Error al obtener el ID de la transcripción o no se ha generado el cuestionario aun.');
+                        }
+    
+                        const transcripcionData = await transcripcionResponse.json();
+                        idTranscripcion = transcripcionData.idTranscripcion;
+    
+                        if (!idTranscripcion) {
+                            throw new Error('No se encontró un ID de transcripción asociado.');
+                        }
+                    }
+    
+                    // Generar y descargar el reporte
+                    const response = await fetch(`/api/generar-reporte/${idProyecto}/${idTranscripcion}`);
+                    if (!response.ok) {
+                        throw new Error('Error al generar el reporte');
+                    }
+    
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `reporte_proyecto_${idProyecto}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+    
+                    //showMessage('Reporte descargado exitosamente.', 'success');
+                } catch (error) {
+                    console.error('Error al descargar el reporte:', error);
+                    showMessage(error.message || 'Error al descargar el reporte.', 'error');
+                } finally {
+                    // Ocultar indicador de carga
+                    if (loadingIndicator) {
+                        loadingIndicator.style.display = 'none';
+                    }
                 }
             });
         });
+
+        
 
         // Filtrar los proyectos cuando cambie el filtro
         document.querySelector('.filter-select').addEventListener('change', async () => {
@@ -1561,7 +1639,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     //AQUI VA A CONSUMIR EL API
-
     document.getElementById('create-project-video-button').addEventListener('click', async (e) => {
         e.preventDefault(); // Prevenir el comportamiento predeterminado
     
@@ -1725,6 +1802,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
 
 
 //================================== bloque de funciones ====================================
