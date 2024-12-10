@@ -935,6 +935,128 @@ app.post('/save-transcription', (req, res) => {
 });
 
 
+//Graba cuestionario
+// Función para procesar preguntas y respuestas
+function procesarPreguntasYRespuestas(jsonContent, idProyecto, idTranscripcion) {
+    const preguntas = [];
+    const opciones = [];
+
+    const texto = jsonContent; // Obtener el texto del JSON
+    const lineas = texto.split("\n"); // Dividir en líneas
+
+    let preguntaActual = null;
+
+    lineas.forEach((linea, index) => {
+        const preguntaMatch = linea.match(/^\d+\.\s(.+)/); // Detectar preguntas
+        const opcionMatch = linea.match(/^\s*-\s*[a-d]\)\s*(.+?)\s*\((\d+)\)\s*$/); // Detectar opciones con coincidencias
+
+        //console.log(`Procesando línea ${index + 1}: "${linea}"`);
+        if (preguntaMatch) {
+            // Si es una pregunta, guardar la anterior y empezar una nueva
+            if (preguntaActual) {
+                preguntas.push(preguntaActual);
+            }
+            preguntaActual = {
+                idProyecto,
+                idTranscripcion,
+                orden: preguntas.length + 1,
+                descripcion: preguntaMatch[1],
+                opciones: [],
+            };
+        } else if (opcionMatch && preguntaActual) {
+            // Si es una opción, agregarla a la pregunta actual
+            
+            const [, descripcion, coincidencias] = opcionMatch;
+            preguntaActual.opciones.push({
+                idProyecto,
+                idTranscripcion,
+                idPregunta: preguntaActual.orden,
+                orden: preguntaActual.opciones.length + 1,
+                descripcion: descripcion.trim(),
+                coincidencias: coincidencias ? parseInt(coincidencias, 10) : 0, // Si no hay coincidencias, asumir 0
+            });
+        }else {
+            //console.log("No se detectó ni pregunta ni opción para la línea:", linea);
+        }
+    });
+
+    // Guardar la última pregunta
+    if (preguntaActual) {
+        preguntas.push(preguntaActual);
+    }
+
+    return { preguntas, opciones: preguntas.flatMap(p => p.opciones) };
+}
+
+// Guardar en la base de datos
+function guardarCuestionarioEnBaseDeDatos(preguntas, opciones) {
+    preguntas.forEach(async (pregunta) => {
+        const queryPregunta = `
+            INSERT INTO com_cuestionario 
+            (id_transcripcion, id_proyecto, id_pregunta, orden, descripcion, pregunta, estado, usuario_ingreso) 
+            VALUES (?, ?, ?, ?, ?, ?, 'ACTIVO', 'user1')
+        `;
+
+        db.query(queryPregunta, [
+            pregunta.idTranscripcion,
+            pregunta.idProyecto,
+            pregunta.orden,
+            pregunta.orden.toString(),
+            pregunta.descripcion,
+            `Pregunta ${pregunta.orden}`,
+        ], (err) => {
+            if (err) {
+                console.error(`Error al insertar la pregunta: ${pregunta.descripcion}`, err);
+            } else {
+                //console.log(`Pregunta insertada correctamente: ${pregunta.descripcion}`);
+            }
+        });
+    });
+
+    opciones.forEach(async (opcion) => {
+        const queryOpcion = `
+            INSERT INTO com_cuestionario_alternativa 
+            (id_proyecto, id_cuestionario, id_pregunta, id_alternativa, orden, descripcion, coincidencias, estado, usuario_ingreso) 
+            VALUES (?, ?, ?, ?, ?, ?, '0', 'ACTIVO', 'user1')
+        `;
+
+        db.query(queryOpcion, [
+            opcion.idProyecto,
+            opcion.idTranscripcion,
+            opcion.idPregunta,
+            opcion.orden,
+            opcion.orden.toString(),
+            opcion.descripcion,
+            opcion.coincidencias,
+        ], (err) => {
+            if (err) {
+                console.error(`Error al insertar la opción: ${opcion.descripcion}`, err);
+            } else {
+                //console.log(`Opción insertada correctamente: ${opcion.descripcion}`);
+            }
+        });
+    });
+}
+
+// Uso
+app.post('/guardar-cuestionario', async (req, res) => {
+    console.log('Cuerpo recibido:', req.body);
+
+    const { idProyecto, idTranscripcion, text } = req.body;
+
+    try {
+        const { preguntas, opciones } = procesarPreguntasYRespuestas(text, idProyecto, idTranscripcion);
+
+        guardarCuestionarioEnBaseDeDatos(preguntas, opciones);
+
+        res.status(200).json({ message: 'Cuestionario guardado exitosamente.' });
+    } catch (error) {
+        console.error('Error al guardar el cuestionario:', error);
+        res.status(500).json({ error: 'Error interno al guardar el cuestionario.' });
+    }
+});
+
+
 
 // Iniciar el servidor
 app.listen(PORT, () => {

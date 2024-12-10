@@ -1616,7 +1616,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            content: `${transcriptText} Según el texto que tienes anteriormente puedes generarme las preguntas y las opciones de respuestas de manera ordenada.`,
+                            content: `${transcriptText} Según el texto que tienes anteriormente puedes generarme las preguntas y las opciones de respuestas de manera ordenada y junto a las respuesta entre parentesis el numero de veces q se repitio.`,
                         }),
                     });
     
@@ -1655,12 +1655,41 @@ document.addEventListener('DOMContentLoaded', () => {
                                 console.log('Transcripción guardada:', dataSave);
                                 projectForm.reset(); // Limpiar el formulario
                                 popupOverlay.style.display = 'none'; // Cerrar el popup
-                                showMessage(dataSave.message, 'success');
+                                //showMessage(dataSave.message, 'success');
                                 
                                 // Opcional: usar el ID de la transcripción
                                 const idTranscripcion = dataSave.idTranscripcion;
 
                                 // Aquí puedes llamar a la función para guardar preguntas si lo necesitas
+                                const content = {
+                                    idProyecto: document.getElementById('project-id').value, // Asegúrate de tener este ID en el formulario
+                                    idTranscripcion: idTranscripcion,
+                                    text: transcriptText.content[0].text, // El texto de la transcripción generado
+                                };
+                            
+                                // Llamar al endpoint para guardar el cuestionario
+                                fetch('/guardar-cuestionario', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify(content),
+                                })
+                                    .then((response) => {
+                                        if (response.ok) {
+                                            return response.json(); // Parsear respuesta
+                                        } else {
+                                            throw new Error('Error al guardar las preguntas del cuestionario.');
+                                        }
+                                    })
+                                    .then((dataQuestions) => {
+                                        console.log('Cuestionario guardado:', dataQuestions);
+                                        showMessage(dataQuestions.message || 'Cuestionario generado exitosamente.', 'success');
+                                    })
+                                    .catch((error) => {
+                                        console.error('Error al guardar el cuestionario:', error);
+                                        document.getElementById('error-proceso').textContent = 'Error al guardar las preguntas del cuestionario. Verifique la transcripción.';
+                                    });
                             })
                             .catch((error) => {
                                 console.error('Error al guardar la transcripción:', error);
