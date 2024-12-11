@@ -1,4 +1,5 @@
 const express = require('express');
+const session = require('express-session');
 const bcrypt = require('bcrypt'); // Importar bcrypt para el cifrado
 const path = require('path');
 const bodyParser = require('body-parser');
@@ -21,6 +22,16 @@ app.use(bodyParser.json()); // Asegúrate de manejar JSON en el servidor
 
 
 
+//
+app.use(
+    session({
+        secret: 'C1AvE@4202', // Cambia esta clave por algo seguro
+        resave: false,
+        saveUninitialized: false,
+        cookie: { secure: false }, // Cambia a `true` si usas HTTPS
+    })
+);
+
 
 
 // Ruta para el formulario de login
@@ -28,27 +39,80 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../public', 'index.html'));
 });
 
+function isAuthenticated(req, res, next) {
+    if (req.session.user) {
+        return next();
+    }
+    // Redirigir al inicio de sesión si no está autenticado
+    res.redirect('/'); // Ajusta la ruta '/login' a la URL de tu pantalla de inicio de sesión
+}
+
 // Ruta para el dashboard
-app.get('/dashboard', (req, res) => {
+app.get('/dashboard', isAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, '../public', 'dashboard.html'));
 });
 
 // Ruta para validar el login
-app.post('/validate-login', (req, res) => {
+app.post('/validate-login', async (req, res) => {
     const { username, password } = req.body;
 
-    const query = 'SELECT * FROM adm_usuario WHERE usuario = ? AND clave = ?';
-    db.query(query, [username, password], (err, results) => {
-        if (err) {
-            console.error('Error al consultar la base de datos:', err);
-            return res.status(500).json({ success: false, message: 'Error interno del servidor' });
-        }
+    if (!username || !password) {
+        return res.status(400).json({ success: false, error: 'Usuario y contraseña son obligatorios.' });
+    }
 
-        if (results.length > 0) {
-            return res.json({ success: true });
-        } else {
-            return res.json({ success: false, message: 'Credenciales incorrectas. Intenta nuevamente.' });
+    try {
+        const query = 'SELECT * FROM adm_usuario WHERE usuario = ?';
+        db.query(query, [username], async (err, results) => {
+            if (err) {
+                console.error('Error al consultar la base de datos:', err);
+                return res.status(500).json({ success: false, message: 'Error interno del servidor.' });
+            }
+
+            if (results.length === 0) {
+                return res.status(401).json({ success: false, message: 'Usuario o contraseña incorrectos.' });
+            }
+
+            const user = results[0];
+
+            // Verificar la contraseña cifrada
+            const passwordMatch = await bcrypt.compare(password, user.clave);
+            if (!passwordMatch) {
+                return res.status(401).json({ success: false, message: 'Usuario o contraseña incorrectos.' });
+            }
+
+            // Almacenar los datos del usuario en la sesión
+            req.session.user = {
+                username: user.usuario,
+                role: user.permiso || 'user', // Asegúrate de que la columna `role` existe o ajusta según tu esquema
+                name: user.nombre,
+                mail: user.correo,
+            };
+
+            
+            return res.status(200).json({ success: true, message: 'Inicio de sesión exitoso.', user: req.session.user });
+            
+        });
+    } catch (error) {
+        console.error('Error al iniciar sesión:', error);
+        return res.status(500).json({ success: false, message: 'Error interno del servidor.' });
+    }
+});
+
+app.get('/api/user-info', (req, res) => {
+    if (!req.session.user) {
+        return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+    res.status(200).json(req.session.user); // Envía los datos del usuario al cliente
+});
+
+app.post('/logout', (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            console.error('Error al cerrar sesión:', err);
+            return res.status(500).json({ error: 'No se pudo cerrar la sesión.' });
         }
+        // Redirigir al inicio de sesión
+        res.redirect('/'); // Cambia '/login' por la ruta a tu pantalla de inicio
     });
 });
 
@@ -1065,6 +1129,24 @@ app.post('/guardar-cuestionario', async (req, res) => {
         res.status(500).json({ error: 'Error interno al guardar el cuestionario.' });
     }
 });
+
+
+//SELECT DE TODOS LOS CUESTIONARIOS
+app.get('/api/cuestionarios', (req, res) => {
+    const query = `select pro.id_proyecto, pro.nombre proyecto_nombre, tra.id_transcripcion, tra.generado, tra.estado  
+                    from com_proyecto pro
+                    inner join com_transcripcion tra ON tra.id_proyecto = pro.id_proyecto 
+                    inner join com_cuestionario cue ON cue.id_proyecto = pro.id_proyecto and cue.id_transcripcion = tra.id_transcripcion 
+                    group by pro.id_proyecto, tra.id_transcripcion `;
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error('Error al obtener cuestionarios:', err);
+            return res.status(500).json({ error: 'Error interno del servidor.' });
+        }
+        res.status(200).json(results);
+    });
+});
+
 
 
 //Imprimir reporte de cuestionario

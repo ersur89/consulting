@@ -1,7 +1,3 @@
-/* document.getElementById("menu-toggle").addEventListener("click", function() {
-    const sidebar = document.getElementById("sidebar");
-    sidebar.classList.toggle("hidden");  // Alterna la clase 'hidden' para ocultar o mostrar el menú
-}); */
 
 // Seleccionamos el botón de menú, el sidebar y el contenedor principal
 const toggleButton = document.querySelector('.menu-toggle');
@@ -45,189 +41,62 @@ function showDeletePopup(type, id, name) {
     deletePopup.style.display = 'flex';
 }
 
-//NUEVO PROYECTO
-/* document.addEventListener('DOMContentLoaded', () => {
-    const menuCrear = document.getElementById('menu-crear');
-    const contentArea = document.getElementById('content-area');
-
-    if (menuCrear) {
-        menuCrear.addEventListener('click', (e) => {
-            e.preventDefault();
-
-            const html = `
-                <div class="form-container">
-                    <h2>Crear un nuevo proyecto de consultoría</h2>
-                    <form action="#" id="projectForm">
-                        <div class="form-group-container">
-                            <div class="form-group">
-                                <label for="project-name">Nombre del proyecto</label>
-                                <input type="text" id="project-name" placeholder="Ingrese el nombre del proyecto" required>
-                                <span class="error-message" id="error-project-name"></span>
-                            </div>
-                            <div class="form-group">
-                                <label for="ruc">Cédula o RUC</label>
-                                <input type="text" id="ruc" placeholder="Ingrese la cédula o RUC" required>
-                                <span class="error-message" id="error-ruc"></span>
-                            </div>
-                            <div class="form-group">
-                                <label for="client-name">Nombre del cliente</label>
-                                <input type="text" id="client-name" placeholder="Ingrese el nombre del cliente" required>
-                                <span class="error-message" id="error-client-name"></span>
-                            </div>
-                            <div class="form-group">
-                                <label for="address">Dirección del cliente</label>
-                                <input type="text" id="address" placeholder="Ingrese la dirección del cliente" required>
-                                <span class="error-message" id="error-address"></span>
-                            </div>
-                            <div class="form-group">
-                                <label for="phone">Teléfono</label>
-                                <input type="text" id="phone" placeholder="Ingrese el número de teléfono" required>
-                                <span class="error-message" id="error-phone"></span>
-                            </div>
-                            <div class="form-group">
-                                <label for="email">Correo electrónico</label>
-                                <input type="email" id="email" placeholder="Ingrese el correo electrónico" required>
-                                <span class="error-message" id="error-email"></span>
-                            </div>
-                            <div class="form-group textarea">
-                                <label for="description">Descripción del proyecto</label>
-                                <textarea id="description" rows="4" placeholder="Ingrese una breve descripción del proyecto"></textarea>
-                                <span class="error-message" id="error-description"></span>
-                            </div>
-                        </div>
-                        <button type="submit" class="submit-btn">Crear Proyecto</button>
-                    </form>
-                </div>
-            `;
-
-            contentArea.innerHTML = html;
-
-            // Validación de formulario
-            document.getElementById('projectForm').addEventListener('submit', function (event) {
-                event.preventDefault();
-
-                // Resetear mensajes de error
-                document.querySelectorAll('.error-message').forEach((msg) => (msg.textContent = ''));
-
-                // Obtener valores
-                const projectName = document.getElementById('project-name').value.trim();
-                const clientName = document.getElementById('client-name').value.trim();
-                const clientId = document.getElementById('ruc').value.trim();
-                const clientAddress = document.getElementById('address').value.trim();
-                const clientPhone = document.getElementById('phone').value.trim();
-                const clientEmail = document.getElementById('email').value.trim();
-                const projectDescription = document.getElementById('description').value.trim();
-                let isValid = true;
-
-                // Validar nombre del proyecto
-                if (!projectName) {
-                    document.getElementById('error-project-name').textContent = 'El nombre del proyecto es obligatorio.';
-                    isValid = false;
-                }
-
-                // Validar Cédula o RUC
-                if (!/^\d{10,13}$/.test(clientId)) {
-                    document.getElementById('error-ruc').textContent = 'La cédula o RUC debe contener entre 10 y 13 números.';
-                    isValid = false;
-                }
-
-                // Validar nombre del cliente
-                if (!clientName) {
-                    document.getElementById('error-client-name').textContent = 'El nombre del cliente es obligatorio.';
-                    isValid = false;
-                }
-
-                // Validar dirección
-                if (!clientAddress) {
-                    document.getElementById('error-address').textContent = 'La dirección del cliente es obligatoria.';
-                    isValid = false;
-                }
-
-                // Validar teléfono
-                if (!clientPhone) {
-                    document.getElementById('error-phone').textContent = 'El teléfono es obligatorio.';
-                    isValid = false;
-                }
-
-                // Validar correo electrónico
-                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail)) {
-                    document.getElementById('error-email').textContent = 'El correo electrónico no tiene un formato válido.';
-                    isValid = false;
-                }
-
-                // Mostrar éxito si todos los campos son válidos
-                if (isValid) {
-                    // Datos del formulario
-                    const formData = {
-                        nombreProyecto: projectName,
-                        nombreCliente: clientName,
-                        rucCedula: clientId,
-                        direccion: clientAddress,
-                        telefono: clientPhone,
-                        correo: clientEmail,
-                        descripcion: projectDescription
-                    };
-
-                    // Llamada al servidor usando fetch
-                    fetch('/crear-proyecto', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(formData),
-                    })
-                        .then((response) => {
-                            if (response.ok) {
-                                return response.json(); // Parsear JSON si el servidor responde con éxito
-                            } else {
-                                throw new Error('Error al crear el proyecto. Verifique los datos e intente nuevamente.');
-                            }
-                        })
-                        .then((data) => {
-                            // Mostrar mensaje de éxito o manejar la respuesta del servidor
-                            if (data.success) {
-                                showMessage(data.message, 'success');
-                                // Opcional: reiniciar el formulario
-                                document.getElementById('projectForm').reset();
-                            } else {
-                                showMessage(data.message || 'Hubo un problema al procesar la solicitud.', 'error'); // Modal para errores
-                            }
-                        })
-                        .catch((error) => {
-                            // Manejo de errores de red o del servidor
-                            showMessage('Hubo un problema con la conexión al servidor.', 'error');
-                            console.error('Error:', error);
-                        });
-                }
-            });
-        });
-    } else {
-        console.error('El elemento con id "menu-crear" no existe en el DOM.');
-    }
-}); */
-
 //INICIO
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const response = await fetch('/api/user-info');
+        if (!response.ok) {
+            throw new Error('No se pudo cargar la información del usuario');
+        }
+        const userInfo = await response.json();
+
+        // Actualiza el nombre en el dashboard
+        const profileInfo = document.querySelector('.profile-info p');
+        profileInfo.textContent = userInfo.name || 'Usuario'; // Muestra el nombre o un valor predeterminado
+
+        const userNameSpan = document.getElementById('user-name');
+        userNameSpan.textContent = userInfo.name || 'Usuario Genérico';
+    } catch (error) {
+        console.error('Error al obtener la información del usuario:', error);
+        window.location.href = '/'; // Redirige al login si no está autenticado
+    }
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     const menuCrear = document.getElementById('menu-inicio');
     const contentArea = document.getElementById('content-area');
 
     if (menuCrear) {
-        menuCrear.addEventListener('click', (e) => {
+        menuCrear.addEventListener('click', async (e) => {
             e.preventDefault();
 
-            const html = `
-                <h1>Bienvenido, Usuario Genérico</h1>
-                <p>Esta es tu página de inicio.</p>
-            `;
+            try {
+                // Solicitar la información del usuario desde la API
+                const response = await fetch('/api/user-info');
+                if (!response.ok) {
+                    throw new Error('No se pudo cargar la información del usuario');
+                }
+                const userInfo = await response.json();
 
-            contentArea.innerHTML = html;
+                // Generar el contenido dinámico con el nombre del usuario
+                const html = `
+                    <h1>Bienvenido, <span id="user-name">${userInfo.name || 'Usuario Genérico'}</span></h1>
+                    <p>Esta es tu página de inicio.</p>
+                `;
+
+                contentArea.innerHTML = html;
+
+            } catch (error) {
+                console.error('Error al obtener la información del usuario:', error);
+                // Redirigir al login si hay un error
+                window.location.href = '/login';
+            }
 
         });
     } else {
         console.error('El elemento con id "menu-inicio" no existe en el DOM.');
     }
 });
-
 
 //CRUD DE USUARIO
 document.addEventListener('DOMContentLoaded', () => {
@@ -1802,6 +1671,311 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+
+// logout
+document.addEventListener('DOMContentLoaded', () => {
+    const logoutButton = document.getElementById('logout'); // Selecciona el elemento por su ID
+
+    if (logoutButton) {
+        logoutButton.addEventListener('click', async (e) => {
+            e.preventDefault(); // Prevenir el comportamiento predeterminado del enlace
+
+            try {
+                // Realizar la solicitud para cerrar sesión
+                const response = await fetch('/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (response.ok) {
+                    // Redirigir al login después de cerrar la sesión
+                    window.location.href = '/'; // Asegúrate de que esta sea la ruta de tu pantalla de inicio de sesión
+                } else {
+                    const data = await response.json();
+                    console.error('Error al cerrar sesión:', data.error || 'Error desconocido');
+                    alert('No se pudo cerrar la sesión. Intenta de nuevo.');
+                }
+            } catch (error) {
+                console.error('Error al cerrar sesión:', error);
+                alert('Hubo un problema al cerrar la sesión.');
+            }
+        });
+    }
+});
+
+
+// Manejo de cuestionarios
+document.addEventListener('DOMContentLoaded', () => {
+    const menuCuestionario = document.getElementById('menu-cuestionario');
+    const contentArea = document.getElementById('content-area');
+
+    let currentPage = 1; // Página inicial
+    const projectsPerPage = 5; // Número de proyectos por página
+    let totalProjects = 0; // Total de proyectos
+    let filteredProjects = []; // Guardar los proyectos filtrados
+
+    if (menuCuestionario) {
+        menuCuestionario.addEventListener('click', async (e) => {
+            e.preventDefault();
+
+            renderCuestionarioStructure();
+            await loadCuestionarios();
+            setupSearchButton(); // Configurar el botón de búsqueda
+        });
+    }
+
+    async function loadCuestionarios(searchTerm = '') {
+        const contentAreaSub = document.querySelector('#contentAreaSub');
+        const filterSelect = document.querySelector('.filter-select'); // Asegúrate de que el filtro exista
+        let filterValue = filterSelect ? filterSelect.value : ''; // Obtén el valor del filtro inicial
+        let cuestionarios = [];
+
+        try {
+            const response = await fetch('/api/cuestionarios');
+            if (!response.ok) throw new Error('Error al obtener los cuestionarios.');
+            cuestionarios = await response.json();
+        } catch (error) {
+            console.error('Error al cargar cuestionarios:', error);
+            contentAreaSub.innerHTML = `<p class="error-message">No se pudieron cargar los cuestionarios.</p>`;
+            return;
+        }
+
+        // Filtrar cuestionarios por estado
+        if (filterValue) {
+            cuestionarios = cuestionarios.filter((cuestionario) =>
+                cuestionario.estado.toLowerCase() === filterValue.toLowerCase()
+            );
+        }
+
+        // Filtrar cuestionarios por término de búsqueda
+        if (searchTerm) {
+            cuestionarios = cuestionarios.filter((cuestionario) =>
+                cuestionario.proyecto_nombre.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+
+        // Paginación
+        const cuestionariosShow = cuestionarios.slice((currentPage - 1) * projectsPerPage, currentPage * projectsPerPage);
+
+        // Generar HTML
+        const html = `
+            <div class="project-grid">
+                <div class="project-grid-header">
+                    <div class="project-grid-cell">Proyecto</div>
+                    <div class="project-grid-cell">Cuestionario</div>
+                    <div class="project-grid-cell">Nombre Proyecto</div>
+                    <div class="project-grid-cell">Generado</div>
+                    <div class="project-grid-cell">Estado</div>
+                    <div class="project-grid-cell">Operaciones</div>
+                </div>
+                ${cuestionariosShow
+                    .map(
+                        (cuestionario) => `
+                        <div class="project-grid-row" data-cuestionario-id="${cuestionario.id_cuestionario}">
+                            <div class="project-grid-cell">${cuestionario.id_proyecto}</div>
+                            <div class="project-grid-cell">${cuestionario.id_transcripcion}</div>
+                            <div class="project-grid-cell">${cuestionario.proyecto_nombre}</div>
+                            <div class="project-grid-cell">${cuestionario.generado}</div>
+                            <div class="project-grid-cell">${cuestionario.estado}</div>
+                            <div class="project-grid-cell">
+                                <button class="edit-button">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="print-button" title="Imprimir">
+                                    <i class="fas fa-print"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `
+                    )
+                    .join('')}
+            </div>
+            <div class="pagination">
+                <button class="prev-button" ${currentPage === 1 ? 'disabled' : ''}>
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <span>Página ${currentPage} de ${Math.ceil(cuestionarios.length / projectsPerPage)}</span>
+                <button class="next-button" ${currentPage === Math.ceil(cuestionarios.length / projectsPerPage) ? 'disabled' : ''}>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        `;
+
+        // Mostrar el contenido generado
+        contentAreaSub.innerHTML = html;
+
+        // Agregar eventos para botones de paginación
+        document.querySelector('.prev-button').addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                loadCuestionarios(); // Recargar los cuestionarios
+            }
+        });
+
+        document.querySelector('.next-button').addEventListener('click', () => {
+            if (currentPage < Math.ceil(cuestionarios.length / projectsPerPage)) {
+                currentPage++;
+                loadCuestionarios(); // Recargar los cuestionarios
+            }
+        });
+
+        document.querySelectorAll('.edit-button').forEach((button) => {
+            button.addEventListener('click', (e) => {
+                const row = e.target.closest('.project-grid-row');
+                const cuestionarioId = row.dataset.cuestionarioId;
+                editCuestionario(cuestionarioId);
+            });
+        });
+
+        // Filtrar los proyectos cuando cambie el filtro
+        document.querySelector('.filter-select').addEventListener('change', async () => {
+            currentPage = 1; // Reiniciar la página actual al cambiar el filtro
+            // Obtén el valor del filtro actual
+            const searchTerm = document.querySelector('.search-input').value.trim();
+
+            await loadCuestionarios(searchTerm); // Pasar los filtros como parámetros
+        });
+
+        document.querySelector('.search-button').addEventListener('click', () => {
+            const searchTerm = document.querySelector('.search-input').value.trim();
+            currentPage = 1;
+            loadCuestionarios(searchTerm);
+        });
+
+        document.querySelectorAll('.print-button').forEach((button) => {
+            button.addEventListener('click', async (e) => {
+                const projectRow = e.target.closest('.project-grid-row');
+                const idProyecto = projectRow.dataset.projectId;
+                let idTranscripcion = projectRow.dataset.transcriptionId;
+    
+                try {
+                    // Mostrar indicador de carga (opcional)
+                    const loadingIndicator = document.getElementById('loading-indicator');
+                    if (loadingIndicator) {
+                        loadingIndicator.style.display = 'flex';
+                    }
+    
+                    // Si no tenemos el idTranscripcion, lo consultamos desde el servidor
+                    if (!idTranscripcion) {
+                        const transcripcionResponse = await fetch(`/api/proyecto/${idProyecto}/transcripcion`);
+                        if (!transcripcionResponse.ok) {
+                            throw new Error('Error al obtener el ID de la transcripción o no se ha generado el cuestionario aun.');
+                        }
+    
+                        const transcripcionData = await transcripcionResponse.json();
+                        idTranscripcion = transcripcionData.idTranscripcion;
+    
+                        if (!idTranscripcion) {
+                            throw new Error('No se encontró un ID de transcripción asociado.');
+                        }
+                    }
+    
+                    // Generar y descargar el reporte
+                    const response = await fetch(`/api/generar-reporte/${idProyecto}/${idTranscripcion}`);
+                    if (!response.ok) {
+                        throw new Error('Error al generar el reporte');
+                    }
+    
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `reporte_proyecto_${idProyecto}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+    
+                    //showMessage('Reporte descargado exitosamente.', 'success');
+                } catch (error) {
+                    console.error('Error al descargar el reporte:', error);
+                    showMessage(error.message || 'Error al descargar el reporte.', 'error');
+                } finally {
+                    // Ocultar indicador de carga
+                    if (loadingIndicator) {
+                        loadingIndicator.style.display = 'none';
+                    }
+                }
+            });
+        });
+
+    }
+
+    function setupSearchButton() {
+        const searchButton = document.querySelector('.search-button');
+        const searchInput = document.querySelector('.search-input');
+    
+        if (searchButton && searchInput) {
+            searchButton.addEventListener('click', () => {
+                const searchTerm = searchInput.value.trim();
+                currentPage = 1; // Reiniciar a la primera página al realizar una búsqueda
+                loadProjects(searchTerm); // Cargar los usuarios filtrados
+            });
+        }
+    }
+
+    function renderCuestionarioStructure() {
+        contentArea.innerHTML = `
+            <div class="table-header">
+                <h2>Cuestionarios Registrados</h2>
+                <!-- <button class="create-button">CREAR NUEVO</button> -->
+                <div class="filters">
+                    <select class="filter-select">
+                        <option value="">Todos</option>
+                        <option value="Activo">Activo</option>  
+                        <option value="Cerrado">Cerrado</option>
+                    </select>
+                    <input type="text" class="search-input" placeholder="Buscar Proyecto" />
+                    <button class="search-button">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="contentAreaSub"></div> <!-- Tabla de cuestionarios -->
+        `;
+
+
+    }
+
+    function openCuestionarioForm(mode, cuestionario = null) {
+        const popupOverlay = document.getElementById('project-popup');
+        const title = popupOverlay.querySelector('.popup-header h3');
+        const form = document.getElementById('project-form');
+
+        form.reset();
+        if (mode === 'create') {
+            title.textContent = 'Nuevo Cuestionario';
+        } else if (mode === 'edit') {
+            title.textContent = 'Editar Cuestionario';
+            // Cargar datos en el formulario
+            form.querySelector('#cuestionario-id').value = cuestionario.id_cuestionario;
+            form.querySelector('#pregunta').value = cuestionario.pregunta;
+            form.querySelector('#estado').value = cuestionario.estado;
+        }
+        popupOverlay.style.display = 'flex';
+    }
+
+/*     function deleteCuestionario(id) {
+        fetch(`/api/cuestionarios/${id}`, {
+            method: 'DELETE',
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Error al eliminar cuestionario.');
+            return response.json();
+        })
+        .then(() => {
+            showMessage('Cuestionario eliminado con éxito.', 'success');
+            loadCuestionarios();
+        })
+        .catch(error => {
+            console.error('Error al eliminar el cuestionario:', error);
+            showMessage('Error al eliminar el cuestionario.', 'error');
+        });
+    } */
+});
+
 
 
 

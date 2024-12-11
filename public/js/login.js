@@ -16,6 +16,7 @@ document.getElementById('login-form').addEventListener('submit', function (e) {
         if (data.success) {
             // Redirigir al dashboard si las credenciales son correctas
             window.location.href = '/dashboard';
+
         } else {
             // Mostrar el mensaje de error en el contenedor
             const errorMessage = document.getElementById('error-message');
