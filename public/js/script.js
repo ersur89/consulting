@@ -843,15 +843,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        /* document.querySelectorAll('.delete-button').forEach((button) => {
-            button.addEventListener('click', (e) => {
-                const projectRow = e.target.closest('.project-grid-row');
-                if (projectRow) {
-                    projectIdToDelete = projectRow.dataset.projectId;
-                    deletePopup.style.display = 'flex';
-                }
-            });
-        }); */
         document.querySelectorAll('.delete-button').forEach((button) => {
             button.addEventListener('click', (e) => {
                 const projectRow = e.target.closest('.project-grid-row');
@@ -1711,6 +1702,8 @@ document.addEventListener('DOMContentLoaded', () => {
 document.addEventListener('DOMContentLoaded', () => {
     const menuCuestionario = document.getElementById('menu-cuestionario');
     const contentArea = document.getElementById('content-area');
+    const popupOverlay = document.getElementById('edit-cuestionario-popup');
+    const closeButton = document.getElementById('close-button-cuestionario');
 
     let currentPage = 1; // Página inicial
     const projectsPerPage = 5; // Número de proyectos por página
@@ -1774,7 +1767,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${cuestionariosShow
                     .map(
                         (cuestionario) => `
-                        <div class="project-grid-row" data-cuestionario-id="${cuestionario.id_cuestionario}">
+                        <div class="project-grid-row" data-project-id="${cuestionario.id_proyecto}">
                             <div class="project-grid-cell">${cuestionario.id_proyecto}</div>
                             <div class="project-grid-cell">${cuestionario.id_transcripcion}</div>
                             <div class="project-grid-cell">${cuestionario.proyecto_nombre}</div>
@@ -1823,12 +1816,35 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         document.querySelectorAll('.edit-button').forEach((button) => {
-            button.addEventListener('click', (e) => {
-                const row = e.target.closest('.project-grid-row');
-                const cuestionarioId = row.dataset.cuestionarioId;
-                editCuestionario(cuestionarioId);
+            button.addEventListener('click', async (e) => {
+                const projectRow = e.target.closest('.project-grid-row');
+                const idProyecto = projectRow.dataset.projectId;
+        
+                try {
+                    let idCuestionario;
+        
+                    // Consultar el ID del cuestionario relacionado con el proyecto
+                    const cuestionarioResponse = await fetch(`/api/proyecto/${idProyecto}/cuestionario`);
+                    if (!cuestionarioResponse.ok) {
+                        throw new Error('Error al obtener el ID del cuestionario.');
+                    }
+        
+                    const cuestionarioData = await cuestionarioResponse.json();
+                    if (cuestionarioData.length > 0) {
+                        idCuestionario = cuestionarioData[0].id_cuestionario;
+                    } else {
+                        throw new Error('No se encontró un cuestionario asociado a este proyecto.');
+                    }
+        
+                    // Llamar a la función openCuestionarioForm con los datos necesarios
+                    openCuestionarioForm('edit', { idProyecto, idCuestionario });
+                } catch (error) {
+                    console.error('Error al editar el cuestionario:', error);
+                    showMessage(error.message || 'Hubo un problema al cargar los datos del cuestionario.', 'error');
+                }
             });
         });
+        
 
         // Filtrar los proyectos cuando cambie el filtro
         document.querySelector('.filter-select').addEventListener('change', async () => {
@@ -1849,7 +1865,8 @@ document.addEventListener('DOMContentLoaded', () => {
             button.addEventListener('click', async (e) => {
                 const projectRow = e.target.closest('.project-grid-row');
                 const idProyecto = projectRow.dataset.projectId;
-                let idTranscripcion = projectRow.dataset.transcriptionId;
+                //console.log ("dato ver:",idProyecto);
+                let idTranscripcion = "";
     
                 try {
                     // Mostrar indicador de carga (opcional)
@@ -1862,6 +1879,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!idTranscripcion) {
                         const transcripcionResponse = await fetch(`/api/proyecto/${idProyecto}/transcripcion`);
                         if (!transcripcionResponse.ok) {
+                            if (loadingIndicator) {
+                                loadingIndicator.style.display = 'none';
+                            }
                             throw new Error('Error al obtener el ID de la transcripción o no se ha generado el cuestionario aun.');
                         }
     
@@ -1869,6 +1889,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         idTranscripcion = transcripcionData.idTranscripcion;
     
                         if (!idTranscripcion) {
+                            if (loadingIndicator) {
+                                loadingIndicator.style.display = 'none';
+                            }
                             throw new Error('No se encontró un ID de transcripción asociado.');
                         }
                     }
@@ -1876,7 +1899,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Generar y descargar el reporte
                     const response = await fetch(`/api/generar-reporte/${idProyecto}/${idTranscripcion}`);
                     if (!response.ok) {
+                        if (loadingIndicator) {
+                            loadingIndicator.style.display = 'none';
+                        }
                         throw new Error('Error al generar el reporte');
+                        
                     }
     
                     const blob = await response.blob();
@@ -1888,10 +1915,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     a.click();
                     a.remove();
     
+                    if (loadingIndicator) {
+                        loadingIndicator.style.display = 'none';
+                    }
                     //showMessage('Reporte descargado exitosamente.', 'success');
                 } catch (error) {
                     console.error('Error al descargar el reporte:', error);
                     showMessage(error.message || 'Error al descargar el reporte.', 'error');
+                    if (loadingIndicator) {
+                        loadingIndicator.style.display = 'none';
+                    }
                 } finally {
                     // Ocultar indicador de carga
                     if (loadingIndicator) {
@@ -1939,41 +1972,330 @@ document.addEventListener('DOMContentLoaded', () => {
 
     }
 
-    function openCuestionarioForm(mode, cuestionario = null) {
-        const popupOverlay = document.getElementById('project-popup');
-        const title = popupOverlay.querySelector('.popup-header h3');
-        const form = document.getElementById('project-form');
-
-        form.reset();
-        if (mode === 'create') {
-            title.textContent = 'Nuevo Cuestionario';
-        } else if (mode === 'edit') {
-            title.textContent = 'Editar Cuestionario';
-            // Cargar datos en el formulario
-            form.querySelector('#cuestionario-id').value = cuestionario.id_cuestionario;
-            form.querySelector('#pregunta').value = cuestionario.pregunta;
-            form.querySelector('#estado').value = cuestionario.estado;
+    /* function openCuestionarioForm(mode, data) {
+        const popupOverlay = document.getElementById('edit-cuestionario-popup');
+        const questionTextInput = document.getElementById('question-text');
+        const alternativesContainer = document.getElementById('alternatives-container');
+        const popupTitle = document.querySelector('.popup-header h3');
+        const prevButton = document.getElementById('prev-question-button');
+        const nextButton = document.getElementById('next-question-button');
+        const saveButton = document.getElementById('save-cuestionario-button');
+    
+        let currentQuestionIndex = 0;
+        let cuestionario = []; // Aquí se almacenarán las preguntas y alternativas cargadas
+    
+        // Función para cargar el cuestionario desde el servidor
+        async function loadCuestionario(idProyecto, idCuestionario) {
+            try {
+                const response = await fetch(`/api/cuestionariosdet/${idProyecto}/${idCuestionario}`);
+                if (!response.ok) throw new Error('Error al cargar el cuestionario.');
+                cuestionario = await response.json();
+                renderQuestion(currentQuestionIndex);
+            } catch (error) {
+                console.error('Error al cargar el cuestionario:', error);
+                showMessage('Hubo un problema al cargar el cuestionario.', 'error');
+            }
         }
+    
+        // Renderizar una pregunta y sus alternativas
+        function renderQuestion(index) {
+            if (!cuestionario[index]) return;
+    
+            const question = cuestionario[index];
+            questionTextInput.value = question.descripcion;
+    
+            // Renderizar alternativas
+            alternativesContainer.innerHTML = '';
+            question.alternativas.forEach((alt, altIndex) => {
+                const alternativeHTML = `
+                    <div class="alternative-row" data-alt-index="${altIndex}">
+                        <input type="text" class="alternative-input" value="${alt.descripcion}" />
+                        <input type="number" class="alternative-order" value="${alt.orden}" min="1" />
+                        <button class="remove-alternative-button">&times;</button>
+                    </div>
+                `;
+                const div = document.createElement('div');
+                div.innerHTML = alternativeHTML;
+                alternativesContainer.appendChild(div.firstElementChild);
+    
+                // Agregar funcionalidad para eliminar la alternativa
+                div.querySelector('.remove-alternative-button').addEventListener('click', (e) => {
+                    const altIndex = e.target.closest('.alternative-row').dataset.altIndex;
+                    cuestionario[index].alternativas.splice(altIndex, 1); // Eliminar del array
+                    renderQuestion(index); // Recargar la pregunta actual
+                });
+            });
+    
+            updateNavigationButtons();
+        }
+    
+        // Actualizar visibilidad de botones de navegación
+        function updateNavigationButtons() {
+            prevButton.disabled = currentQuestionIndex === 0;
+            nextButton.disabled = currentQuestionIndex === cuestionario.length - 1;
+        }
+    
+        // Agregar una nueva alternativa
+        document.getElementById('add-alternative-button').addEventListener('click', () => {
+            const newAlternative = {
+                descripcion: '',
+                orden: cuestionario[currentQuestionIndex].alternativas.length + 1,
+            };
+            cuestionario[currentQuestionIndex].alternativas.push(newAlternative);
+            renderQuestion(currentQuestionIndex);
+        });
+    
+        // Navegar entre preguntas
+        prevButton.addEventListener('click', () => {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                renderQuestion(currentQuestionIndex);
+            }
+        });
+    
+        nextButton.addEventListener('click', () => {
+            if (currentQuestionIndex < cuestionario.length - 1) {
+                currentQuestionIndex++;
+                renderQuestion(currentQuestionIndex);
+            }
+        });
+    
+        // Guardar el cuestionario en el servidor
+        saveButton.addEventListener('click', async () => {
+            try {
+                const response = await fetch(`/api/cuestionarios/${data.idProyecto}/${data.idCuestionario}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(cuestionario),
+                });
+    
+                if (!response.ok) throw new Error('Error al guardar el cuestionario.');
+                showMessage('Cuestionario guardado con éxito.', 'success');
+                popupOverlay.style.display = 'none';
+            } catch (error) {
+                console.error('Error al guardar el cuestionario:', error);
+                showMessage('Error al guardar el cuestionario.', 'error');
+            }
+        });
+    
+        // Mostrar el popup
         popupOverlay.style.display = 'flex';
+    
+        // Cargar los datos del cuestionario si es modo "editar"
+        if (mode === 'edit' && data) {
+            popupTitle.textContent = `Editar Cuestionario: ${data.idCuestionario}`;
+            loadCuestionario(data.idProyecto, data.idCuestionario);
+        } else {
+            popupTitle.textContent = 'Crear Nuevo Cuestionario';
+        }
+    } */
+
+    function openCuestionarioForm(mode, data) {
+        const popupOverlay = document.getElementById('edit-cuestionario-popup');
+        const questionDescriptionInput = document.getElementById('question-description');
+        const questionOrderInput = document.getElementById('question-order');
+        const alternativesContainer = document.getElementById('alternatives-container');
+        const popupTitle = document.getElementById('question-title');
+        const addAlternativeButton = document.getElementById('add-alternative-button');
+        const prevQuestionButton = document.getElementById('prev-question-button');
+        const nextQuestionButton = document.getElementById('next-question-button');
+        const saveCuestionarioButton = document.getElementById('save-cuestionario-button');
+    
+        // Variables para manejar las preguntas
+        let currentQuestionIndex = 0;
+        let cuestionario = [];
+    
+        // Limpiar los campos del formulario
+        questionDescriptionInput.value = '';
+        questionOrderInput.value = '';
+        alternativesContainer.innerHTML = '';
+    
+        if (mode === 'edit' && data) {
+            popupTitle.textContent = `Cuestionario: ${data.idCuestionario}`;
+    
+            // Cargar datos desde el servidor
+            fetch(`/api/cuestionariosdet/${data.idProyecto}/${data.idCuestionario}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Error al obtener los datos del cuestionario.');
+                    }
+                    return response.json();
+                })
+                .then(cuestionarioData => {
+                    if (!cuestionarioData || cuestionarioData.length === 0) {
+                        throw new Error('El cuestionario está vacío o no se pudo cargar correctamente.');
+                    }
+                    cuestionario = cuestionarioData;
+                    renderQuestion(cuestionario[currentQuestionIndex]); // Renderizar la primera pregunta
+                })
+                .catch(error => {
+                    console.error('Error al cargar el cuestionario:', error);
+                    showMessage('Hubo un problema al cargar el cuestionario. Inténtalo nuevamente.', 'error');
+                });
+        } else if (mode === 'create') {
+            popupTitle.textContent = 'Crear Nuevo Cuestionario';
+        }
+    
+        // Mostrar el popup
+        popupOverlay.style.display = 'flex';
+    
+        // Función para renderizar una pregunta y sus alternativas
+        function renderQuestion(pregunta) {
+            if (!pregunta) {
+                console.error('Pregunta no encontrada para renderizar.');
+                showMessage('No hay preguntas para mostrar.', 'error');
+                return;
+            }
+    
+            questionDescriptionInput.value = pregunta.descripcion || '';
+            questionOrderInput.textContent  = pregunta.orden || '';
+            alternativesContainer.innerHTML = '';
+    
+            pregunta.alternativas.forEach((alt, index) => {
+                const alternativeHTML = `
+                    <div class="alternative-row" data-order="${alt.orden}">
+                        <input type="text" class="alternative-input" value="${alt.descripcion || ''}" />
+                        <input type="number" class="alternative-order" value="${alt.orden || index + 1}" min="1" />
+                        <button class="remove-alternative-button">&times;</button>
+                    </div>
+                `;
+            
+                const div = document.createElement('div');
+                div.innerHTML = alternativeHTML;
+            
+                // Verifica si el botón existe antes de intentar agregar un evento
+                const button = div.querySelector('.remove-alternative-button');
+                if (button) {
+                    button.addEventListener('click', (e) => {
+                        e.target.closest('.alternative-row').remove();
+                    });
+                } else {
+                    console.error('El botón para eliminar la alternativa no se encontró.');
+                }
+            
+                alternativesContainer.appendChild(div.firstElementChild);
+            });
+            
+        }
+    
+        // Función para guardar la pregunta actual
+        function saveCurrentQuestion() {
+            if (!cuestionario[currentQuestionIndex]) return;
+    
+            const currentQuestion = cuestionario[currentQuestionIndex];
+            currentQuestion.orden = questionOrderInput.textContent;
+            currentQuestion.descripcion = questionDescriptionInput.value;
+            currentQuestion.alternativas = Array.from(alternativesContainer.children).map((row, index) => ({
+                id_alternativa: row.dataset.order || null,
+                descripcion: row.querySelector('.alternative-input').value,
+                orden: parseInt(row.querySelector('.alternative-order').value, 10),
+            }));
+        }
+    
+        // Botón para agregar una nueva alternativa
+        /* addAlternativeButton.addEventListener('click', () => {
+
+
+            const alternativeHTML = `
+                <div class="alternative-row">
+                    <input type="text" class="alternative-input" placeholder="Nueva alternativa" />
+                    <input type="number" class="alternative-order" value="${alternativesContainer.children.length + 1}" min="1" />
+                    <button class="remove-alternative-button">&times;</button>
+                </div>
+            `;
+    
+            const div = document.createElement('div');
+            div.innerHTML = alternativeHTML;
+            alternativesContainer.appendChild(div.firstElementChild);
+    
+            // Agregar funcionalidad para eliminar alternativa
+            div.querySelector('.remove-alternative-button').addEventListener('click', (e) => {
+                e.target.closest('.alternative-row').remove();
+            });
+        }); */
+
+        // Botón para agregar una nueva alternativa
+        addAlternativeButton.addEventListener('click', () => {
+            // Crear un contenedor para la nueva alternativa
+            const div = document.createElement('div');
+            div.className = 'alternative-row';
+
+            // Agregar el contenido HTML de la nueva alternativa
+            div.innerHTML = `
+                <input type="text" class="alternative-input" placeholder="Nueva alternativa" />
+                <input type="number" class="alternative-order" value="${alternativesContainer.children.length + 1}" min="1" />
+                <button class="remove-alternative-button">&times;</button>
+            `;
+
+            // Agregar la nueva alternativa al contenedor de alternativas
+            alternativesContainer.appendChild(div);
+
+            // Seleccionar el botón recién agregado y asignar el evento
+            const removeButton = div.querySelector('.remove-alternative-button');
+            if (removeButton) {
+                removeButton.addEventListener('click', (e) => {
+                    e.target.closest('.alternative-row').remove();
+                });
+            }
+        });
+
+    
+        // Navegación de preguntas
+        prevQuestionButton.addEventListener('click', () => {
+            if (currentQuestionIndex > 0) {
+                saveCurrentQuestion();
+                currentQuestionIndex--;
+                renderQuestion(cuestionario[currentQuestionIndex]);
+            }
+        });
+    
+        nextQuestionButton.addEventListener('click', () => {
+            if (currentQuestionIndex < cuestionario.length - 1) {
+                saveCurrentQuestion();
+                currentQuestionIndex++;
+                renderQuestion(cuestionario[currentQuestionIndex]);
+            }
+        });
+    
+        // Guardar cambios del cuestionario
+        saveCuestionarioButton.addEventListener('click', async () => {
+            saveCurrentQuestion(); // Guardar los datos de la pregunta actual
+            try {
+                const response = await fetch(`/api/cuestionarios/${data.idProyecto}/${data.idCuestionario}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(cuestionario),
+                });
+    
+                const result = await response.json();
+                if (response.ok) {
+                    showMessage(result.message || 'Cuestionario guardado correctamente.', 'success');
+                    popupOverlay.style.display = 'none';
+                } else {
+                    showMessage(result.error || 'Error al guardar el cuestionario.', 'error');
+                }
+            } catch (error) {
+                console.error('Error al guardar el cuestionario:', error);
+                showMessage('Hubo un problema al guardar el cuestionario. Inténtalo nuevamente.', 'error');
+            }
+        });
+    
+        // Botón para cerrar el popup
+        document.getElementById('close-cuestionario-button').addEventListener('click', () => {
+            popupOverlay.style.display = 'none';
+        });
     }
 
-/*     function deleteCuestionario(id) {
-        fetch(`/api/cuestionarios/${id}`, {
-            method: 'DELETE',
-        })
-        .then(response => {
-            if (!response.ok) throw new Error('Error al eliminar cuestionario.');
-            return response.json();
-        })
-        .then(() => {
-            showMessage('Cuestionario eliminado con éxito.', 'success');
-            loadCuestionarios();
-        })
-        .catch(error => {
-            console.error('Error al eliminar el cuestionario:', error);
-            showMessage('Error al eliminar el cuestionario.', 'error');
-        });
-    } */
+    
+    closeButton.addEventListener('click', () => {
+        popupOverlay.style.display = 'none';
+    });
+
+
 });
 
 

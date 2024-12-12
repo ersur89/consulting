@@ -770,7 +770,7 @@ img.logo-img {
     color: #3a75eb;
 }
 
-#user-popup .close-popup {
+#user-popup .close-popup  {
     cursor: pointer;
     background-color: rgb(238, 83, 83);
     font-size: 24px;
@@ -778,6 +778,8 @@ img.logo-img {
     color: white;
     border: none;
 }
+
+
 
 #user-popup .popup-body {
     display: flex;
@@ -1239,4 +1241,99 @@ BOTONES OPERACION*/
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+
+/* editar preguntas*/
+
+.popup {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    width: 500px;
+    max-width: 90%;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.popup-content {
+    margin-top: 20px;
+}
+
+.popup-footer {
+    margin-top: 20px;
+    text-align: right;
+}
+
+.alternative-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.alternative-input {
+    flex: 1;
+    margin-right: 10px;
+}
+
+.alternative-order {
+    width: 50px;
+    margin-right: 10px;
+}
+
+.remove-alternative-button {
+    background: red;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+.question-section {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch; /* Asegura que los hijos ocupen todo el ancho */
+}
+
+.question-section textarea {
+    flex: 1; /* Permite que se estire con el contenedor */
+    min-width: 0; /* Asegura que no haya desbordamiento */
+    box-sizing: border-box;
+}
+
+#question-order, #tittle-questions {
+    font-weight: bold;
+    margin-left: 8px; /* Espaciado entre "Pregunta:" y el orden */
+    color: #555; /* Cambia el color si es necesario */
+}
+
+
+.navigation-section {
+    display: flex; /* Usa flexbox para el alineado */
+    justify-content: center; /* Centra horizontalmente */
+    gap: 10px; /* Espaciado entre los botones */
+    margin: 5px; /* Espaciado superior opcional */
+}
+
+.save-section {
+    display: flex; /* Habilitar flexbox */
+    justify-content: space-between; /* Espacio entre los botones */
+    align-items: center; /* Alinear verticalmente al centro */
+    margin-top: 20px; /* Espaciado superior opcional */
+    padding: 0 10px; /* Espaciado interno opcional */
+}
+
+#close-button-cuestionario {
+    cursor: pointer;
+    background-color: rgb(238, 83, 83);
+    font-size: 24px;
+    border-radius: 3px;
+    color: white;
+    border: none;
 }

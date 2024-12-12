@@ -802,6 +802,38 @@ app.delete('/api/proyectos/:id', (req, res) => {
     });
 });
 
+// Ruta para obtener el ID del cuestionario
+app.get('/api/proyecto/:idProyecto/cuestionario', async (req, res) => {
+    const { idProyecto } = req.params;
+
+    if (!idProyecto) {
+        return res.status(400).json({ error: 'El ID del proyecto es obligatorio.' });
+    }
+
+    const query = `
+        SELECT 
+            pro.id_proyecto, 
+            cue.id_transcripcion AS id_cuestionario
+        FROM com_proyecto pro
+        INNER JOIN com_transcripcion tra ON tra.id_proyecto = pro.id_proyecto 
+        INNER JOIN com_cuestionario cue ON cue.id_proyecto = pro.id_proyecto 
+            AND cue.id_transcripcion = tra.id_transcripcion
+        WHERE pro.id_proyecto = ?
+        GROUP BY pro.id_proyecto, cue.id_transcripcion
+    `;
+
+    try {
+        const [rows] = await db.promise().query(query, [idProyecto]); // Usando Promises para evitar callbacks
+        if (rows.length > 0) {
+            res.status(200).json(rows); // Devuelve los resultados
+        } else {
+            res.status(404).json({ error: 'No se encontró el cuestionario para el proyecto especificado.' });
+        }
+    } catch (error) {
+        console.error('Error al obtener el cuestionario:', error);
+        res.status(500).json({ error: 'Error interno del servidor.' });
+    }
+});
 
 
 //===================================================================================================================
@@ -1256,6 +1288,147 @@ app.get('/api/proyecto/:idProyecto/transcripcion', async (req, res) => {
         res.status(500).json({ error: 'Error al obtener la transcripción.' });
     }
 });
+
+//preguntas
+app.get('/api/cuestionariosdet/:idProyecto/:idCuestionario', async (req, res) => {
+    const { idProyecto, idCuestionario } = req.params;
+
+    if (!idProyecto || !idCuestionario) {
+        return res.status(400).json({ error: 'El ID del proyecto y del cuestionario son obligatorios.' });
+    }
+
+    try {
+        const query = `
+            SELECT 
+                cue.id_pregunta, cue.orden AS pre_orden, cue.descripcion AS pregunta, alt.id_alternativa, alt.descripcion AS alternativa,
+                alt.orden AS alt_orden, alt.coincidencias
+            FROM com_cuestionario cue
+            LEFT JOIN com_cuestionario_alternativa alt
+            ON cue.id_proyecto = alt.id_proyecto AND cue.id_transcripcion = alt.id_cuestionario AND cue.id_pregunta = alt.id_pregunta
+            WHERE cue.id_proyecto = ? AND cue.id_transcripcion = ?
+            ORDER BY cue.id_pregunta, alt.orden
+        `;
+
+        const [rows] = await db.promise().query(query, [idProyecto, idCuestionario]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'No se encontraron datos para el cuestionario solicitado.' });
+        }
+
+        const formattedData = rows.reduce((acc, row) => {
+            let question = acc.find(q => q.id_pregunta === row.id_pregunta);
+            if (!question) {
+                question = {
+                    id_pregunta: row.id_pregunta,
+                    descripcion: row.pregunta,
+                    orden: row.pre_orden,
+                    alternativas: []
+                };
+                acc.push(question);
+            }
+
+            if (row.id_alternativa) {
+                question.alternativas.push({
+                    id_alternativa: row.id_alternativa,
+                    descripcion: row.alternativa,
+                    orden: row.alt_orden,
+                    coincidencias: row.coincidencias || 0 // Si es null, asignar 0
+                });
+            }
+
+            return acc;
+        }, []);
+
+        res.status(200).json(formattedData);
+    } catch (error) {
+        console.error('Error al obtener el cuestionario:', error);
+        res.status(500).json({ error: 'Error interno al obtener el cuestionario.' });
+    }
+});
+
+app.put('/api/cuestionarios/:idProyecto/:idCuestionario', async (req, res) => {
+    const { idProyecto, idCuestionario } = req.params;
+    const cuestionario = req.body;
+
+    if (!idProyecto || !idCuestionario || !Array.isArray(cuestionario)) {
+        return res.status(400).json({ error: 'Datos inválidos o incompletos.' });
+    }
+
+    try {
+        // Iniciar transacción
+        db.beginTransaction(async (err) => {
+            if (err) {
+                console.error('Error al iniciar la transacción:', err);
+                return res.status(500).json({ error: 'Error interno al iniciar la transacción.' });
+            }
+
+            try {
+                for (const pregunta of cuestionario) {
+                    // Actualizar la descripción de la pregunta
+                    await new Promise((resolve, reject) => {
+                        db.query(
+                            `UPDATE com_cuestionario 
+                             SET descripcion = ? 
+                             WHERE id_proyecto = ? AND id_transcripcion = ? AND id_pregunta = ?`,
+                            [pregunta.descripcion, idProyecto, idCuestionario, pregunta.id_pregunta],
+                            (err) => {
+                                if (err) return reject(err);
+                                resolve();
+                            }
+                        );
+                    });
+
+                    for (const alternativa of pregunta.alternativas) {
+                        // Actualizar la descripción, orden y coincidencias de la alternativa
+                        await new Promise((resolve, reject) => {
+                            db.query(
+                                `UPDATE com_cuestionario_alternativa 
+                                 SET descripcion = ?, orden = ?, coincidencias = ? 
+                                 WHERE id_proyecto = ? AND id_cuestionario = ? AND id_pregunta = ? AND id_alternativa = ?`,
+                                [
+                                    alternativa.descripcion,
+                                    alternativa.orden,
+                                    alternativa.coincidencias,
+                                    idProyecto,
+                                    idCuestionario,
+                                    pregunta.id_pregunta,
+                                    alternativa.id_alternativa,
+                                ],
+                                (err) => {
+                                    if (err) return reject(err);
+                                    resolve();
+                                }
+                            );
+                        });
+                    }
+                }
+
+                // Confirmar transacción
+                db.commit((err) => {
+                    if (err) {
+                        console.error('Error al confirmar la transacción:', err);
+                        db.rollback(() => {});
+                        return res.status(500).json({ error: 'Error interno al confirmar la transacción.' });
+                    }
+
+                    res.status(200).json({ message: 'Cuestionario actualizado correctamente.' });
+                });
+            } catch (error) {
+                console.error('Error al actualizar el cuestionario, transacción revertida:', error);
+                db.rollback(() => {});
+                res.status(500).json({ error: 'Error interno al actualizar el cuestionario.' });
+            }
+        });
+    } catch (error) {
+        console.error('Error general del servidor:', error);
+        res.status(500).json({ error: 'Error interno del servidor.' });
+    }
+});
+
+
+
+
+
 
 
 // Iniciar el servidor

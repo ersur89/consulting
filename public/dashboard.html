@@ -226,6 +226,49 @@
             </div>
         </div>
     </div>
+
+    <div id="edit-cuestionario-popup" class="popup-overlay" style="display: none;">
+        <div class="popup">
+            <div class="popup-header">
+                <h3></h3>
+                <button class="close-popup"  id="close-button-cuestionario">&times;</button>
+            </div>
+            <div class="popup-content">
+                <h2 id="question-title">Editar Preguntas</h2>
+        
+                <!-- Formulario para la pregunta -->
+                <div class="question-section">
+                    <label for="question-description" id = "tittle-questions">
+                        Pregunta: <span id="question-order">(-)</span>
+                    </label>
+                    <textarea id="question-description" rows="3" placeholder="Ingrese la descripción de la pregunta"></textarea>
+                </div>
+        
+                <!-- Sección de alternativas -->
+                <div class="alternatives-section">
+                    <h3>Alternativas</h3>
+                    <div id="alternatives-container"></div>
+                    <button id="add-alternative-button" class="button add-button">Agregar Alternativa</button>
+                </div>
+        
+                <!-- Navegación de preguntas -->
+                <div class="navigation-section">
+                    <button id="prev-question-button" class="button nav-button">Pregunta Anterior</button>
+                    <button id="next-question-button" class="button nav-button">Pregunta Siguiente</button>
+                </div>
+        
+                <!-- Guardar cambios -->
+                <div class="save-section">
+                    <button id="close-cuestionario-button" class="button close-button">Cerrar</button>
+                    <button id="save-cuestionario-button" class="button save-button">Guardar Cambios</button>
+                </div>
+        
+                <!-- Botón de cierre -->
+                
+            </div>
+        </div>
+    </div>
+    
     <div id="loading-indicator" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);">
         <div class="spinner"></div>
         <p>Generando reporte...</p>
