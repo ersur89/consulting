@@ -1495,10 +1495,7 @@ document.addEventListener('DOMContentLoaded', () => {
         popupOverlay.style.display = 'none';
     });
 
-
-
-
-    //AQUI VA A CONSUMIR EL API
+    //AQUI VA A CONSUMIR EL API para crrear el cuestionario 
     document.getElementById('create-project-video-button').addEventListener('click', async (e) => {
         e.preventDefault(); // Prevenir el comportamiento predeterminado
     
@@ -1517,7 +1514,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     
         // Mostrar el indicador de carga
+        const form = document.getElementById('project-video-form');
+        const overlay = document.getElementById('form-overlay');
+
+        overlay.classList.remove('hidden');
+        overlay.textContent = "Procesando...";
         loadingIndicator.style.display = 'flex';
+        // Deshabilitar todos los elementos del formulario
+        Array.from(form.elements).forEach((el) => {
+            el.disabled = true;
+        });
+
+        
     
         // Mostrar éxito si todos los campos son válidos
         if (isValid) {
@@ -1633,6 +1641,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 showMessage('Error al guardar la transcripción.', 'error');
                             });
                         console.log(dataGenerate.texto);
+                        await loadProjects();
                         showMessage('Preguntas generadas con éxito.', 'success');
                     } else {
                         throw new Error('No se pudieron generar preguntas.');
@@ -1645,6 +1654,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 errorProceso.textContent = error.message || 'Hubo un problema con la conexión al servidor.';
             } finally {
                 // Ocultar el indicador de carga
+                Array.from(form.elements).forEach((el) => {
+                    el.disabled = false;
+                });
+                overlay.classList.add('hidden');
                 loadingIndicator.style.display = 'none';
             }
         } else {
@@ -2175,44 +2188,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
             });
         }
-        
-        /* function renderQuestion(pregunta) {
-            if (!pregunta) {
-                console.error('Pregunta no encontrada para renderizar.');
-                showMessage('No hay preguntas para mostrar.', 'error');
-                return;
-            }
-    
-            questionDescriptionInput.value = pregunta.descripcion || '';
-            questionOrderInput.textContent  = pregunta.orden || '';
-            alternativesContainer.innerHTML = '';
-    
-            pregunta.alternativas.forEach((alt, index) => {
-                const alternativeHTML = `
-                    <div class="alternative-row" data-order="${alt.orden}">
-                        <input type="text" class="alternative-input" value="${alt.descripcion || ''}" />
-                        <input type="number" class="alternative-order" value="${alt.orden || index + 1}" min="1" />
-                        <button class="remove-alternative-button">&times;</button>
-                    </div>
-                `;
-            
-                const div = document.createElement('div');
-                div.innerHTML = alternativeHTML;
-            
-                // Verifica si el botón existe antes de intentar agregar un evento
-                const button = div.querySelector('.remove-alternative-button');
-                if (button) {
-                    button.addEventListener('click', (e) => {
-                        e.target.closest('.alternative-row').remove();
-                    });
-                } else {
-                    console.error('El botón para eliminar la alternativa no se encontró.');
-                }
-            
-                alternativesContainer.appendChild(div.firstElementChild);
-            });
-            
-        } */
     
         // Función para guardar la pregunta actual
         function saveCurrentQuestion() {
@@ -2248,24 +2223,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
             });
         }
-        
-        
-        /* function saveCurrentQuestion() {
-            if (!cuestionario[currentQuestionIndex]) return;
-    
-            const currentQuestion = cuestionario[currentQuestionIndex];
-            currentQuestion.orden = questionOrderInput.textContent;
-            currentQuestion.descripcion = questionDescriptionInput.value;
-            currentQuestion.alternativas = Array.from(alternativesContainer.children).map((row, index) => ({
-                id_alternativa: row.dataset.order || index + 1,
-                descripcion: row.querySelector('.alternative-input').value,
-                orden: parseInt(row.querySelector('.alternative-order').value, 10),
-            }));
-        } */
     
         // Botón para agregar una nueva alternativa
         addAlternativeButton.addEventListener('click', () => {
             // Crear un contenedor para la nueva alternativa
+            console.log("alternativesContainer.children.length");
+
             const div = document.createElement('div');
             div.className = 'alternative-row';
 
@@ -2326,6 +2289,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = await response.json();
                 if (response.ok) {
                     showMessage(result.message || 'Cuestionario guardado correctamente.', 'success');
+                    // Remover eventos existentes para evitar duplicados
+                    addAlternativeButton.replaceWith(addAlternativeButton.cloneNode(true));
+                    prevQuestionButton.replaceWith(prevQuestionButton.cloneNode(true));
+                    nextQuestionButton.replaceWith(nextQuestionButton.cloneNode(true));
+                    saveCuestionarioButton.replaceWith(saveCuestionarioButton.cloneNode(true));
                     popupOverlay.style.display = 'none';
                 } else {
                     showMessage(result.error || 'Error al guardar el cuestionario.', 'error');
@@ -2339,14 +2307,23 @@ document.addEventListener('DOMContentLoaded', () => {
         // Botón para cerrar el popup
         document.getElementById('close-cuestionario-button').addEventListener('click', () => {
             popupOverlay.style.display = 'none';
+            // Remover eventos existentes para evitar duplicados
+            addAlternativeButton.replaceWith(addAlternativeButton.cloneNode(true));
+            prevQuestionButton.replaceWith(prevQuestionButton.cloneNode(true));
+            nextQuestionButton.replaceWith(nextQuestionButton.cloneNode(true));
+            saveCuestionarioButton.replaceWith(saveCuestionarioButton.cloneNode(true));
         });
+
+        closeButton.addEventListener('click', () => {
+            popupOverlay.style.display = 'none';
+            // Remover eventos existentes para evitar duplicados
+            addAlternativeButton.replaceWith(addAlternativeButton.cloneNode(true));
+            prevQuestionButton.replaceWith(prevQuestionButton.cloneNode(true));
+            nextQuestionButton.replaceWith(nextQuestionButton.cloneNode(true));
+            saveCuestionarioButton.replaceWith(saveCuestionarioButton.cloneNode(true));
+        });
+        
     }
-
-    
-    closeButton.addEventListener('click', () => {
-        popupOverlay.style.display = 'none';
-    });
-
 
 });
 

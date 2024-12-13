@@ -1056,9 +1056,10 @@ function procesarPreguntasYRespuestas(jsonContent, idProyecto, idTranscripcion) 
         const preguntaMatch = linea.match(/^\d+\.\s(.+)/); // Detectar preguntas
         const opcionMatch = linea.match(/^\s*-\s*[a-dA-D]\)\s*(.+?)\s*\((\d+)\)\s*$/); // Detectar opciones con coincidencias
 
-        console.log(`Procesando línea ${index + 1}: "${linea}"`);
+        
         if (preguntaMatch) {
             // Si es una pregunta, guardar la anterior y empezar una nueva
+            //console.log(`Procesando línea ${index + 1}: "${linea}"`);
             if (preguntaActual) {
                 preguntas.push(preguntaActual);
             }
@@ -1071,7 +1072,7 @@ function procesarPreguntasYRespuestas(jsonContent, idProyecto, idTranscripcion) 
             };
         } else if (opcionMatch && preguntaActual) {
             // Si es una opción, agregarla a la pregunta actual
-            console.log("Alternativa:", opcionMatch);
+            //console.log("Alternativa:", opcionMatch);
             const [, descripcion, coincidencias] = opcionMatch;
             preguntaActual.opciones.push({
                 idProyecto,
