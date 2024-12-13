@@ -2148,6 +2148,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 showMessage('No hay preguntas para mostrar.', 'error');
                 return;
             }
+            questionDescriptionInput.value = pregunta.descripcion || '';
+            questionOrderInput.textContent = pregunta.orden || '';
+            alternativesContainer.innerHTML = '';
+        
+            pregunta.alternativas.forEach((alt) => {
+                const alternativeHTML = `
+                    <div class="alternative-row" data-alternative-id="${alt.id_alternativa}">
+                        <input type="text" class="alternative-input" value="${alt.descripcion}" />
+                        <input type="number" class="alternative-order" value="${alt.orden}" min="1" />
+                        <button class="remove-alternative-button">&times;</button>
+                    </div>
+                `;
+        
+                const div = document.createElement('div');
+                div.innerHTML = alternativeHTML;
+                const button = div.querySelector('.remove-alternative-button');
+                if (button) {
+                    button.addEventListener('click', (e) => {
+                        e.target.closest('.alternative-row').remove();
+                    });
+                } else {
+                    console.error('El botón para eliminar la alternativa no se encontró.');
+                }
+                alternativesContainer.appendChild(div.firstElementChild);
+        
+            });
+        }
+        
+        /* function renderQuestion(pregunta) {
+            if (!pregunta) {
+                console.error('Pregunta no encontrada para renderizar.');
+                showMessage('No hay preguntas para mostrar.', 'error');
+                return;
+            }
     
             questionDescriptionInput.value = pregunta.descripcion || '';
             questionOrderInput.textContent  = pregunta.orden || '';
@@ -2178,44 +2212,57 @@ document.addEventListener('DOMContentLoaded', () => {
                 alternativesContainer.appendChild(div.firstElementChild);
             });
             
-        }
+        } */
     
         // Función para guardar la pregunta actual
         function saveCurrentQuestion() {
+            const currentQuestion = cuestionario[currentQuestionIndex];
+        
+            // Verificar si la pregunta actual existe
+            if (!currentQuestion) {
+                console.error("No se encontró la pregunta actual.");
+                return;
+            }
+        
+            const updatedDescription = questionDescriptionInput.value.trim();
+            const updatedOrder = questionOrderInput.value.trim();
+        
+            // Solo actualizar el orden si es válido
+            if (updatedOrder && !isNaN(updatedOrder)) {
+                currentQuestion.orden = parseInt(updatedOrder, 10);
+            }
+        
+            // Actualizar la descripción de la pregunta
+            currentQuestion.descripcion = updatedDescription;
+        
+            // Actualizar las alternativas
+            currentQuestion.alternativas = Array.from(alternativesContainer.children).map((altRow) => {
+                const description = altRow.querySelector('.alternative-input').value.trim();
+                const order = altRow.querySelector('.alternative-order').value.trim();
+                const id = altRow.dataset.alternativeId;
+        
+                return {
+                    id_alternativa: id,
+                    descripcion: description,
+                    orden: order ? parseInt(order, 10) : null, // Validar que el orden sea un número
+                };
+            });
+        }
+        
+        
+        /* function saveCurrentQuestion() {
             if (!cuestionario[currentQuestionIndex]) return;
     
             const currentQuestion = cuestionario[currentQuestionIndex];
             currentQuestion.orden = questionOrderInput.textContent;
             currentQuestion.descripcion = questionDescriptionInput.value;
             currentQuestion.alternativas = Array.from(alternativesContainer.children).map((row, index) => ({
-                id_alternativa: row.dataset.order || null,
+                id_alternativa: row.dataset.order || index + 1,
                 descripcion: row.querySelector('.alternative-input').value,
                 orden: parseInt(row.querySelector('.alternative-order').value, 10),
             }));
-        }
+        } */
     
-        // Botón para agregar una nueva alternativa
-        /* addAlternativeButton.addEventListener('click', () => {
-
-
-            const alternativeHTML = `
-                <div class="alternative-row">
-                    <input type="text" class="alternative-input" placeholder="Nueva alternativa" />
-                    <input type="number" class="alternative-order" value="${alternativesContainer.children.length + 1}" min="1" />
-                    <button class="remove-alternative-button">&times;</button>
-                </div>
-            `;
-    
-            const div = document.createElement('div');
-            div.innerHTML = alternativeHTML;
-            alternativesContainer.appendChild(div.firstElementChild);
-    
-            // Agregar funcionalidad para eliminar alternativa
-            div.querySelector('.remove-alternative-button').addEventListener('click', (e) => {
-                e.target.closest('.alternative-row').remove();
-            });
-        }); */
-
         // Botón para agregar una nueva alternativa
         addAlternativeButton.addEventListener('click', () => {
             // Crear un contenedor para la nueva alternativa
@@ -2246,17 +2293,21 @@ document.addEventListener('DOMContentLoaded', () => {
         prevQuestionButton.addEventListener('click', () => {
             if (currentQuestionIndex > 0) {
                 saveCurrentQuestion();
-                currentQuestionIndex--;
-                renderQuestion(cuestionario[currentQuestionIndex]);
-            }
+                currentQuestionIndex--; // Mover al índice anterior
+                renderQuestion(cuestionario[currentQuestionIndex]); // Renderizar la pregunta actualizada
+            }/*  else {
+                showMessage('Estás en la primera pregunta.', 'info'); // Opcional: mostrar mensaje si ya estás en la primera pregunta
+            } */
         });
     
         nextQuestionButton.addEventListener('click', () => {
             if (currentQuestionIndex < cuestionario.length - 1) {
                 saveCurrentQuestion();
-                currentQuestionIndex++;
-                renderQuestion(cuestionario[currentQuestionIndex]);
-            }
+                currentQuestionIndex++; // Mover al siguiente índice
+                renderQuestion(cuestionario[currentQuestionIndex]); // Renderizar la pregunta actualizada
+            } /* else {
+                showMessage('Estás en la última pregunta.', 'info'); // Opcional: mostrar mensaje si ya estás en la última pregunta
+            } */
         });
     
         // Guardar cambios del cuestionario
@@ -2268,9 +2319,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     headers: {
                         'Content-Type': 'application/json',
                     },
+                    
                     body: JSON.stringify(cuestionario),
                 });
-    
+                console.log ("Datos:",cuestionario);
                 const result = await response.json();
                 if (response.ok) {
                     showMessage(result.message || 'Cuestionario guardado correctamente.', 'success');
