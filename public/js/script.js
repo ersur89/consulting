@@ -1133,11 +1133,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Configurar el formulario en donde vamos a subir el link del video
     function configureProjectForm(mode, project = null) {
+        const form = document.getElementById('project-video-form');
+        const overlay = document.getElementById('form-overlay');
+        const overlayMessage = document.getElementById('overlay-message');
+        overlay.classList.add('hiddens'); // Asegurarse de que el overlay esté oculto al abrir el formulario
+        overlayMessage.textContent = ""; // Limpiar mensajes previos
         projectForm.reset(); // Limpiar el formulario
+        
         const popup = document.getElementById('project-video-popup');
         const title = popup.querySelector('.popup-header h3'); // Selecciona el título del popup
         const createButton = document.getElementById('create-project-video-button');
-        //const updateButton = document.getElementById('update-project-button');
         const projectIdField = document.getElementById('project-id');
 
 
@@ -1161,6 +1166,8 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('projecto-nombre').value = project.proyecto_nombre;
             document.getElementById('cliente-nombre').value  = project.cliente_nombre;
             document.getElementById('ruc_cedula').value      = project.cedula_ruc;
+
+            // Marcar los campos como solo lectura
             document.getElementById('id-proyect').setAttribute('readonly', true);
             document.getElementById('projecto-nombre').setAttribute('readonly', true);
             document.getElementById('cliente-nombre').setAttribute('readonly', true);
@@ -1345,42 +1352,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         //GENERAR REPORTE DE CUESTIONARIO
-        /* document.querySelectorAll('.print-button').forEach((button) => {
-            button.addEventListener('click', async (e) => {
-                const projectRow = e.target.closest('.project-grid-row');
-                const idProyecto = projectRow.dataset.projectId;
-                const idTranscripcion = projectRow.dataset.transcriptionId;
-
-                try {
-                    // Mostrar indicador de carga (opcional)
-                    const loadingIndicator = document.getElementById('loading-indicator');
-                    loadingIndicator.style.display = 'flex';
-
-                    const response = await fetch(`/api/generar-reporte/${idProyecto}/${idTranscripcion}`);
-                    if (!response.ok) {
-                        throw new Error('Error al generar el reporte');
-                    }
-
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `reporte_proyecto_${idProyecto}.pdf`;
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-
-                    // Ocultar indicador de carga
-                    loadingIndicator.style.display = 'none';
-
-                    showMessage('Reporte descargado exitosamente.', 'success');
-                } catch (error) {
-                    console.error('Error al descargar el reporte:', error);
-                    showMessage('Error al descargar el reporte.', 'error');
-                }
-            });
-        }); */
-
         document.querySelectorAll('.print-button').forEach((button) => {
             button.addEventListener('click', async (e) => {
                 const projectRow = e.target.closest('.project-grid-row');
@@ -1501,7 +1472,12 @@ document.addEventListener('DOMContentLoaded', () => {
     
         // Resetear mensajes de error
         document.querySelectorAll('.error-message').forEach((msg) => (msg.textContent = ''));
+        
         const audioUrl = document.getElementById('link').value.trim(); // Obtener el enlace del audio
+        // Mostrar el indicador de carga
+        const form = document.getElementById('project-video-form');
+        const overlay = document.getElementById('form-overlay');
+        const overlayMessage = document.getElementById('overlay-message');
         const loadingIndicator = document.getElementById('loading-indicator'); // Indicador de carga
         const errorProceso = document.getElementById('error-proceso'); // Elemento para mostrar errores del proceso
         const idProyecto   = document.getElementById('id-proyect').value.trim();
@@ -1513,24 +1489,20 @@ document.addEventListener('DOMContentLoaded', () => {
             isValid = false;
         }
     
-        // Mostrar el indicador de carga
-        const form = document.getElementById('project-video-form');
-        const overlay = document.getElementById('form-overlay');
-
-        overlay.classList.remove('hidden');
-        overlay.textContent = "Procesando...";
-        loadingIndicator.style.display = 'flex';
-        // Deshabilitar todos los elementos del formulario
-        Array.from(form.elements).forEach((el) => {
-            el.disabled = true;
-        });
-
         
     
         // Mostrar éxito si todos los campos son válidos
         if (isValid) {
             // Datos del formulario
             const formData = { url: audioUrl };
+
+            overlay.classList.remove('hiddens');
+            overlayMessage.innerHTML = "Procesando<span class='loading-dots'></span>";
+            loadingIndicator.style.display = 'flex';
+            // Deshabilitar todos los elementos del formulario
+            Array.from(form.elements).forEach((el) => {
+                el.disabled = true;
+            });
     
             try {
                 // Llamada a la API de transcripción
