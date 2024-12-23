@@ -6,6 +6,8 @@ const bodyParser = require('body-parser');
 const { AssemblyAI } = require('assemblyai');
 const { CohereClientV2 } = require('cohere-ai'); 
 
+const { createCanvas } = require('canvas');
+//const Chart = require('chart.js');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 
@@ -1264,6 +1266,695 @@ app.get('/api/generar-reporte/:idProyecto/:idTranscripcion', async (req, res) =>
         res.status(500).json({ error: 'Error al generar el reporte' });
     }
 });
+
+//Imprimir estadistica
+app.get('/api/generar-estadisticas/:idProyecto/:idTranscripcion', async (req, res) => {
+    const { idProyecto, idTranscripcion } = req.params;
+
+    try {
+        const query = `
+            SELECT 
+                cue.id_pregunta, cue.descripcion AS pregunta, 
+                alt.descripcion AS alternativa, alt.coincidencias
+            FROM com_cuestionario cue
+            LEFT JOIN com_cuestionario_alternativa alt
+            ON cue.id_proyecto = alt.id_proyecto AND cue.id_transcripcion = alt.id_cuestionario AND cue.id_pregunta = alt.id_pregunta
+            WHERE cue.id_proyecto = ? AND cue.id_transcripcion = ?
+            ORDER BY cue.id_pregunta, alt.orden
+        `;
+
+        const [rows] = await db.promise().query(query, [idProyecto, idTranscripcion]);
+
+        const dataByQuestion = rows.reduce((acc, row) => {
+            if (!acc[row.id_pregunta]) {
+                acc[row.id_pregunta] = {
+                    pregunta: row.pregunta,
+                    alternativas: [],
+                };
+            }
+            acc[row.id_pregunta].alternativas.push({
+                descripcion: row.alternativa,
+                coincidencias: row.coincidencias || 0,
+            });
+            return acc;
+        }, {});
+
+        const doc = new PDFDocument({ margin: 40, size: 'A4' });
+        res.setHeader('Content-Type', 'application/pdf');
+        doc.pipe(res);
+
+        doc.fontSize(18).text(`Reporte Estadístico - Proyecto ${idProyecto}`, { align: 'center' });
+        doc.moveDown(2);
+
+        let questionNumber = 1; // Para numerar las preguntas
+
+        for (const [idPregunta, { pregunta, alternativas }] of Object.entries(dataByQuestion)) {
+
+            if (doc.y > 500) { // Si el cursor está cerca del final de la página
+                doc.addPage(); // Añade una nueva página
+            }
+
+            // Mostrar la pregunta con número
+            doc.fontSize(12).text(`Pregunta ${questionNumber}:`, { underline: true });
+            doc.fontSize(10).text(`${pregunta}`, { width: 450, align: 'justify' });
+            questionNumber++;
+            doc.moveDown(0.5);
+
+            const total = alternativas.reduce((sum, alt) => sum + parseInt(alt.coincidencias, 10), 0);
+
+            if (total === 0) {
+                doc.fontSize(10).text('No hay datos suficientes para generar un gráfico.', { align: 'center' });
+                doc.moveDown(1);
+                continue;
+            }
+
+            // Mostrar alternativas
+            /* alternativas.forEach((alt, index) => {
+                doc.fontSize(8).text(
+                    `${index + 1}. ${alt.descripcion} (${alt.coincidencias})`,
+                    { width: 450, align: 'justify', indent: 20 }
+                );
+            }); */
+
+            
+            // Ajustar espacio antes del gráfico
+            doc.moveDown(1);
+
+            // Verifica nuevamente antes de agregar el gráfico
+            if (doc.y > 650) {
+                doc.addPage();
+            }
+
+            // Crear gráfico circular perfecto
+            const canvas = createCanvas(700, 700); // Tamaño del gráfico ajustado
+            const ctx = canvas.getContext('2d');
+
+            const centerX = canvas.width / 5; // Centro X del círculo
+            const centerY = canvas.height / 5; // Centro Y del círculo
+            const radius = Math.min(centerX, centerY) / 2; // Reducir el radio a la mitad
+
+            let startAngle = 0; // Ángulo inicial
+
+            alternativas.forEach((alt, index) => {
+                const sliceAngle = (alt.coincidencias / total) *( 2 * Math.PI); // Porción proporcional
+                //console.log(`Pregunta ${questionNumber}:`,sliceAngle, `calculo: (${alt.coincidencias} / ${total}) *( 2 * ${Math.PI}))`);
+                ctx.fillStyle = `hsl(${(index * 360) / alternativas.length}, 70%, 70%)`; // Colores dinámicos
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY); // Punto central del círculo
+                ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle); // Dibujar segmento
+                ctx.closePath();
+                ctx.fill();
+                startAngle += sliceAngle; // Avanzar el ángulo inicial
+            });
+
+            // Leyenda dentro del gráfico
+            alternativas.forEach((alt, index) => {
+                ctx.fillStyle = `hsl(${(index * 360) / alternativas.length}, 70%, 70%)`;
+                ctx.fillRect(10, 10 + index * 15, 10, 10);
+
+                ctx.fillStyle = '#000';
+                ctx.font = '10px Arial';
+                ctx.fillText(`${alt.descripcion} (${alt.coincidencias})`, 25, 18 + index * 15);
+            });
+
+            const imageBuffer = canvas.toBuffer('image/png');
+            doc.image(imageBuffer, { fit: [500, 500], align: 'center' }); // Gráfico pequeño y centrado
+            doc.moveDown(15); // Espacio después del gráfico
+        }
+
+        doc.end();
+    } catch (error) {
+        console.error('Error al generar el reporte estadístico:', error);
+        res.status(500).json({ error: 'Error interno al generar el reporte estadístico.' });
+    }
+});
+
+/* app.get('/api/generar-estadisticas/:idProyecto/:idTranscripcion', async (req, res) => {
+    const { idProyecto, idTranscripcion } = req.params;
+
+    try {
+        const query = `
+            SELECT 
+                cue.id_pregunta, cue.descripcion AS pregunta, 
+                alt.descripcion AS alternativa, alt.coincidencias
+            FROM com_cuestionario cue
+            LEFT JOIN com_cuestionario_alternativa alt
+            ON cue.id_proyecto = alt.id_proyecto AND cue.id_transcripcion = alt.id_cuestionario AND cue.id_pregunta = alt.id_pregunta
+            WHERE cue.id_proyecto = ? AND cue.id_transcripcion = ?
+            ORDER BY cue.id_pregunta, alt.orden
+        `;
+
+        const [rows] = await db.promise().query(query, [idProyecto, idTranscripcion]);
+
+        const dataByQuestion = rows.reduce((acc, row) => {
+            if (!acc[row.id_pregunta]) {
+                acc[row.id_pregunta] = {
+                    pregunta: row.pregunta,
+                    alternativas: [],
+                };
+            }
+            acc[row.id_pregunta].alternativas.push({
+                descripcion: row.alternativa,
+                coincidencias: row.coincidencias || 0,
+            });
+            return acc;
+        }, {});
+
+        const doc = new PDFDocument({ margin: 40 });
+        res.setHeader('Content-Type', 'application/pdf');
+        doc.pipe(res);
+
+        doc.fontSize(18).text(`Reporte Estadístico - Proyecto ${idProyecto}`, { align: 'center' });
+        doc.moveDown(2);
+
+        let questionNumber = 1; // Para numerar las preguntas
+
+        for (const [idPregunta, { pregunta, alternativas }] of Object.entries(dataByQuestion)) {
+            // Agregar título de la pregunta con número
+            doc.fontSize(14).text(`Pregunta ${questionNumber}: ${pregunta}`, {
+                underline: true,
+                width: 500,
+                align: 'justify',
+            });
+            questionNumber++;
+            doc.moveDown(0.5);
+
+            // Mostrar alternativas
+            alternativas.forEach((alt, index) => {
+                doc.fontSize(10).text(
+                    `${index + 1}. ${alt.descripcion} (${alt.coincidencias})`,
+                    { width: 450, align: 'justify', indent: 20 }
+                );
+            });
+
+            doc.moveDown(0.5);
+
+            const total = alternativas.reduce((sum, alt) => sum + alt.coincidencias, 0);
+            if (total === 0) {
+                doc.fontSize(12).text('No hay datos suficientes para generar un gráfico.', { align: 'center' });
+                doc.moveDown(1);
+                continue;
+            }
+
+            // Crear gráfico
+            const canvas = createCanvas(250, 250); // Gráfico más pequeño
+            const ctx = canvas.getContext('2d');
+
+            let startAngle = 0;
+            alternativas.forEach((alt, index) => {
+                const sliceAngle = (alt.coincidencias / total) * 2 * Math.PI;
+                ctx.fillStyle = `hsl(${(index * 360) / alternativas.length}, 70%, 70%)`;
+                ctx.beginPath();
+                ctx.moveTo(125, 125);
+                ctx.arc(125, 125, 125, startAngle, startAngle + sliceAngle);
+                ctx.closePath();
+                ctx.fill();
+                startAngle += sliceAngle;
+            });
+
+            // Leyenda fuera del gráfico
+            alternativas.forEach((alt, index) => {
+                ctx.fillStyle = `hsl(${(index * 360) / alternativas.length}, 70%, 70%)`;
+                ctx.fillRect(10, 10 + index * 20, 15, 15);
+
+                ctx.fillStyle = '#000';
+                ctx.font = '8px Arial';
+                ctx.fillText(`${alt.descripcion} (${alt.coincidencias})`, 30, 22 + index * 20);
+            });
+
+            const imageBuffer = canvas.toBuffer('image/png');
+            doc.image(imageBuffer, { fit: [300, 300], align: 'center' }); // Gráfico centrado y ajustado
+            doc.moveDown(1);
+
+            // Espaciado entre preguntas
+            doc.moveDown(2);
+        }
+
+        doc.end();
+    } catch (error) {
+        console.error('Error al generar el reporte estadístico:', error);
+        res.status(500).json({ error: 'Error interno al generar el reporte estadístico.' });
+    }
+}); */
+
+/* app.get('/api/generar-estadisticas/:idProyecto/:idTranscripcion', async (req, res) => {
+    const { idProyecto, idTranscripcion } = req.params;
+
+    try {
+        const query = `
+            SELECT 
+                cue.id_pregunta, cue.descripcion AS pregunta, 
+                alt.descripcion AS alternativa, alt.coincidencias
+            FROM com_cuestionario cue
+            LEFT JOIN com_cuestionario_alternativa alt
+            ON cue.id_proyecto = alt.id_proyecto AND cue.id_transcripcion = alt.id_cuestionario AND cue.id_pregunta = alt.id_pregunta
+            WHERE cue.id_proyecto = ? AND cue.id_transcripcion = ?
+            ORDER BY cue.id_pregunta, alt.orden
+        `;
+
+        const [rows] = await db.promise().query(query, [idProyecto, idTranscripcion]);
+
+        const dataByQuestion = rows.reduce((acc, row) => {
+            if (!acc[row.id_pregunta]) {
+                acc[row.id_pregunta] = {
+                    pregunta: row.pregunta,
+                    alternativas: [],
+                };
+            }
+            acc[row.id_pregunta].alternativas.push({
+                descripcion: row.alternativa,
+                coincidencias: row.coincidencias || 0,
+            });
+            return acc;
+        }, {});
+
+        const doc = new PDFDocument({ margin: 30 });
+        res.setHeader('Content-Type', 'application/pdf');
+        doc.pipe(res);
+
+        doc.fontSize(18).text(`Reporte Estadístico - Proyecto ${idProyecto}`, { align: 'center' });
+        doc.moveDown(2);
+
+        let questionNumber = 1; // Para numerar las preguntas
+
+        for (const [idPregunta, { pregunta, alternativas }] of Object.entries(dataByQuestion)) {
+            // Agregar título de la pregunta con número
+            doc.fontSize(14).text(`Pregunta ${questionNumber}: ${pregunta}`, { underline: true });
+            questionNumber++;
+            doc.moveDown(0.5);
+
+            const total = alternativas.reduce((sum, alt) => sum + alt.coincidencias, 0);
+            if (total === 0) {
+                doc.fontSize(12).text('No hay datos suficientes para generar un gráfico.', { align: 'center' });
+                doc.moveDown(1);
+                continue;
+            }
+
+            // Crear gráfico
+            const canvas = createCanvas(400, 400);
+            const ctx = canvas.getContext('2d');
+
+            let startAngle = 0;
+            alternativas.forEach((alt, index) => {
+                const sliceAngle = (alt.coincidencias / total) * 2 * Math.PI;
+                ctx.fillStyle = `hsl(${(index * 360) / alternativas.length}, 70%, 70%)`;
+                ctx.beginPath();
+                ctx.moveTo(200, 200);
+                ctx.arc(200, 200, 200, startAngle, startAngle + sliceAngle);
+                ctx.closePath();
+                ctx.fill();
+                startAngle += sliceAngle;
+            });
+
+            // Leyenda dentro del gráfico
+            alternativas.forEach((alt, index) => {
+                ctx.fillStyle = `hsl(${(index * 360) / alternativas.length}, 80%, 80%)`;
+                ctx.fillRect(20, 20 + index * 20, 15, 15);
+
+                ctx.fillStyle = '#000';
+                ctx.font = '10px sans-serif'; // Fuente más pequeña para las alternativas
+                ctx.fillText(`${alt.descripcion} (${alt.coincidencias})`, 40, 30 + index * 20);
+            });
+
+            const imageBuffer = canvas.toBuffer('image/png');
+            doc.image(imageBuffer, { fit: [400, 400], align: 'center' });
+            doc.moveDown(1);
+
+            // Espaciado entre preguntas
+            doc.moveDown(2);
+        }
+
+        doc.end();
+    } catch (error) {
+        console.error('Error al generar el reporte estadístico:', error);
+        res.status(500).json({ error: 'Error interno al generar el reporte estadístico.' });
+    }
+}); */
+
+/* app.get('/api/generar-estadisticas/:idProyecto/:idTranscripcion', async (req, res) => {
+    const { idProyecto, idTranscripcion } = req.params;
+
+    try {
+        const query = `
+            SELECT 
+                cue.id_pregunta, cue.descripcion AS pregunta, 
+                alt.descripcion AS alternativa, alt.coincidencias
+            FROM com_cuestionario cue
+            LEFT JOIN com_cuestionario_alternativa alt
+            ON cue.id_proyecto = alt.id_proyecto AND cue.id_transcripcion = alt.id_cuestionario AND cue.id_pregunta = alt.id_pregunta
+            WHERE cue.id_proyecto = ? AND cue.id_transcripcion = ?
+            ORDER BY cue.id_pregunta, alt.orden
+        `;
+
+        const [rows] = await db.promise().query(query, [idProyecto, idTranscripcion]);
+
+        const dataByQuestion = rows.reduce((acc, row) => {
+            if (!acc[row.id_pregunta]) {
+                acc[row.id_pregunta] = {
+                    pregunta: row.pregunta,
+                    alternativas: [],
+                };
+            }
+            acc[row.id_pregunta].alternativas.push({
+                descripcion: row.alternativa,
+                coincidencias: row.coincidencias || 0,
+            });
+            return acc;
+        }, {});
+
+        const doc = new PDFDocument({ margin: 30 });
+        res.setHeader('Content-Type', 'application/pdf');
+        doc.pipe(res);
+
+        doc.fontSize(18).text(`Reporte Estadístico - Proyecto ${idProyecto}`, { align: 'center' });
+        doc.moveDown(2);
+
+        for (const [idPregunta, { pregunta, alternativas }] of Object.entries(dataByQuestion)) {
+            // Agregar título de la pregunta
+            doc.fontSize(14).text(`Pregunta: ${pregunta}`, { underline: true });
+            doc.moveDown(0.5);
+
+            const total = alternativas.reduce((sum, alt) => sum + alt.coincidencias, 0);
+            if (total === 0) {
+                doc.fontSize(12).text('No hay datos suficientes para generar un gráfico.', { align: 'center' });
+                doc.moveDown(1);
+                continue;
+            }
+
+            // Crear gráfico
+            const canvas = createCanvas(400, 400);
+            const ctx = canvas.getContext('2d');
+
+            let startAngle = 0;
+            alternativas.forEach((alt, index) => {
+                const sliceAngle = (alt.coincidencias / total) * 2 * Math.PI;
+                ctx.fillStyle = `hsl(${(index * 360) / alternativas.length}, 70%, 70%)`;
+                ctx.beginPath();
+                ctx.moveTo(200, 200);
+                ctx.arc(200, 200, 200, startAngle, startAngle + sliceAngle);
+                ctx.closePath();
+                ctx.fill();
+                startAngle += sliceAngle;
+            });
+
+            // Agregar leyenda dentro del gráfico
+            alternativas.forEach((alt, index) => {
+                ctx.fillStyle = `hsl(${(index * 360) / alternativas.length}, 70%, 70%)`;
+                ctx.fillRect(20, 20 + index * 20, 15, 15);
+
+                ctx.fillStyle = '#000';
+                ctx.font = '16px sans-serif';
+                ctx.fillText(`${alt.descripcion} (${alt.coincidencias})`, 40, 30 + index * 20);
+            });
+
+            const imageBuffer = canvas.toBuffer('image/png');
+            doc.image(imageBuffer, { fit: [400, 400], align: 'center' });
+            doc.moveDown(1);
+
+            // Espaciado entre preguntas
+            doc.moveDown(2);
+        }
+
+        doc.end();
+    } catch (error) {
+        console.error('Error al generar el reporte estadístico:', error);
+        res.status(500).json({ error: 'Error interno al generar el reporte estadístico.' });
+    }
+}); */
+
+/* app.get('/api/generar-estadisticas/:idProyecto/:idTranscripcion', async (req, res) => {
+    const { idProyecto, idTranscripcion } = req.params;
+
+    try {
+        const query = `
+            SELECT 
+                cue.id_pregunta, cue.descripcion AS pregunta, 
+                alt.descripcion AS alternativa, alt.coincidencias
+            FROM com_cuestionario cue
+            LEFT JOIN com_cuestionario_alternativa alt
+            ON cue.id_proyecto = alt.id_proyecto AND cue.id_transcripcion = alt.id_cuestionario AND cue.id_pregunta = alt.id_pregunta
+            WHERE cue.id_proyecto = ? AND cue.id_transcripcion = ?
+            ORDER BY cue.id_pregunta, alt.orden
+        `;
+
+        const [rows] = await db.promise().query(query, [idProyecto, idTranscripcion]);
+
+        const dataByQuestion = rows.reduce((acc, row) => {
+            if (!acc[row.id_pregunta]) {
+                acc[row.id_pregunta] = {
+                    pregunta: row.pregunta,
+                    alternativas: [],
+                };
+            }
+            acc[row.id_pregunta].alternativas.push({
+                descripcion: row.alternativa,
+                coincidencias: row.coincidencias || 0,
+            });
+            return acc;
+        }, {});
+
+        const doc = new PDFDocument({ margin: 30 });
+        res.setHeader('Content-Type', 'application/pdf');
+        doc.pipe(res);
+
+        doc.fontSize(18).text(`Reporte Estadístico - Proyecto ${idProyecto}`, { align: 'center' });
+        doc.moveDown(2);
+
+        for (const [idPregunta, { pregunta, alternativas }] of Object.entries(dataByQuestion)) {
+            doc.fontSize(14).text(`Pregunta: ${pregunta}`, { underline: true });
+            doc.moveDown(0.5);
+
+            const total = alternativas.reduce((sum, alt) => sum + alt.coincidencias, 0);
+            if (total === 0) {
+                doc.fontSize(12).text('No hay datos suficientes para generar un gráfico.', { align: 'center' });
+                doc.moveDown(1);
+                continue;
+            }
+
+            const canvas = createCanvas(400, 400);
+            const ctx = canvas.getContext('2d');
+
+            let startAngle = 0;
+
+            alternativas.forEach((alt, index) => {
+                const sliceAngle = (alt.coincidencias / total) * 2 * Math.PI;
+
+                ctx.fillStyle = `hsl(${(index * 360) / alternativas.length}, 70%, 70%)`;
+                ctx.beginPath();
+                ctx.moveTo(200, 200);
+                ctx.arc(200, 200, 200, startAngle, startAngle + sliceAngle);
+                ctx.closePath();
+                ctx.fill();
+
+                startAngle += sliceAngle;
+            });
+
+            alternativas.forEach((alt, index) => {
+                ctx.fillStyle = `hsl(${(index * 360) / alternativas.length}, 70%, 70%)`;
+                ctx.fillRect(250, 20 + index * 20, 15, 15);
+
+                ctx.fillStyle = '#000';
+                ctx.font = '16px sans-serif';
+                ctx.fillText(`${alt.descripcion} (${alt.coincidencias})`, 270, 35 + index * 20);
+            });
+
+            const imageBuffer = canvas.toBuffer('image/png');
+            doc.image(imageBuffer, { fit: [400, 400], align: 'center' });
+            doc.moveDown(1);
+        }
+
+        doc.end();
+    } catch (error) {
+        console.error('Error al generar el reporte estadístico:', error);
+        res.status(500).json({ error: 'Error interno al generar el reporte estadístico.' });
+    }
+}); */
+
+/* app.get('/api/generar-estadisticas/:idProyecto/:idTranscripcion', async (req, res) => {
+    const { idProyecto, idTranscripcion } = req.params;
+
+    try {
+        // Consultar preguntas y alternativas desde la base de datos
+        const query = `
+            SELECT 
+                cue.id_pregunta, cue.descripcion AS pregunta, 
+                alt.descripcion AS alternativa, alt.coincidencias
+            FROM com_cuestionario cue
+            LEFT JOIN com_cuestionario_alternativa alt
+            ON cue.id_proyecto = alt.id_proyecto AND cue.id_transcripcion = alt.id_cuestionario AND cue.id_pregunta = alt.id_pregunta
+            WHERE cue.id_proyecto = ? AND cue.id_transcripcion = ?
+            ORDER BY cue.id_pregunta, alt.orden
+        `;
+
+        const [rows] = await db.promise().query(query, [idProyecto, idTranscripcion]);
+
+        // Organizar datos por pregunta
+        const dataByQuestion = rows.reduce((acc, row) => {
+            if (!acc[row.id_pregunta]) {
+                acc[row.id_pregunta] = {
+                    pregunta: row.pregunta,
+                    alternativas: [],
+                };
+            }
+            acc[row.id_pregunta].alternativas.push({
+                descripcion: row.alternativa,
+                coincidencias: row.coincidencias || 0,
+            });
+            return acc;
+        }, {});
+
+        // Crear el PDF
+        const doc = new PDFDocument({ margin: 30 });
+        res.setHeader('Content-Type', 'application/pdf');
+        doc.pipe(res);
+
+        doc.fontSize(18).text(`Reporte Estadístico - Proyecto ${idProyecto}`, { align: 'center' });
+        doc.moveDown(2);
+
+        for (const [idPregunta, { pregunta, alternativas }] of Object.entries(dataByQuestion)) {
+            // Encabezado de la pregunta
+            doc.fontSize(14).text(`Pregunta: ${pregunta}`, { underline: true });
+            doc.moveDown(0.5);
+
+            // Crear gráfica de pastel
+            const canvas = createCanvas(400, 400);
+            const ctx = canvas.getContext('2d');
+
+            if (!ctx) {
+                console.error('Error: No se pudo obtener el contexto 2D del canvas.');
+                res.status(500).json({ error: 'No se pudo crear el canvas para los gráficos.' });
+                return;
+            }
+
+            const total = alternativas.reduce((sum, alt) => sum + alt.coincidencias, 0);
+            let startAngle = 0;
+
+            alternativas.forEach((alt, index) => {
+                const sliceAngle = (alt.coincidencias / total) * 2 * Math.PI;
+
+                // Colores alternativos para las secciones
+                ctx.fillStyle = `hsl(${(index * 360) / alternativas.length}, 70%, 70%)`;
+                ctx.beginPath();
+                ctx.moveTo(200, 200);
+                ctx.arc(200, 200, 200, startAngle, startAngle + sliceAngle);
+                ctx.closePath();
+                ctx.fill();
+
+                startAngle += sliceAngle;
+            });
+
+            // Leyenda
+            alternativas.forEach((alt, index) => {
+                ctx.fillStyle = `hsl(${(index * 360) / alternativas.length}, 70%, 70%)`;
+                ctx.fillRect(410, 20 + index * 20, 15, 15);
+
+                ctx.fillStyle = '#000';
+                ctx.font = '16px Arial';
+                ctx.fillText(`${alt.descripcion} (${alt.coincidencias})`, 430, 35 + index * 20);
+            });
+
+            const imageBuffer = canvas.toBuffer();
+            doc.image(imageBuffer, { fit: [400, 400], align: 'center' });
+            doc.moveDown(1);
+
+            console.log('Procesando pregunta:', pregunta);
+            console.log('Buffer generado:', imageBuffer);
+        }
+
+        doc.end();
+    } catch (error) {
+        console.error('Error al generar el reporte estadístico:', error);
+        res.status(500).json({ error: 'Error interno al generar el reporte estadístico.' });
+    }
+}); */
+
+/* app.get('/api/generar-estadisticas/:idProyecto/:idTranscripcion', async (req, res) => {
+    const { idProyecto, idTranscripcion } = req.params;
+
+    try {
+        // Consultar preguntas y alternativas desde la base de datos
+        const query = `
+            SELECT 
+                cue.id_pregunta, cue.descripcion AS pregunta, 
+                alt.descripcion AS alternativa, alt.coincidencias
+            FROM com_cuestionario cue
+            LEFT JOIN com_cuestionario_alternativa alt
+            ON cue.id_proyecto = alt.id_proyecto AND cue.id_transcripcion = alt.id_cuestionario AND cue.id_pregunta = alt.id_pregunta
+            WHERE cue.id_proyecto = ? AND cue.id_transcripcion = ?
+            ORDER BY cue.id_pregunta, alt.orden
+        `;
+
+        const [rows] = await db.promise().query(query, [idProyecto, idTranscripcion]);
+
+        // Organizar datos por pregunta
+        const dataByQuestion = rows.reduce((acc, row) => {
+            if (!acc[row.id_pregunta]) {
+                acc[row.id_pregunta] = {
+                    pregunta: row.pregunta,
+                    alternativas: [],
+                };
+            }
+            acc[row.id_pregunta].alternativas.push({
+                descripcion: row.alternativa,
+                coincidencias: row.coincidencias || 0,
+            });
+            return acc;
+        }, {});
+
+        // Crear el PDF
+        const doc = new PDFDocument();
+        res.setHeader('Content-Type', 'application/pdf');
+        doc.pipe(res);
+
+        doc.fontSize(16).text(`Reporte Estadístico - Proyecto ${idProyecto}`, { align: 'center' });
+        doc.moveDown(1);
+
+        for (const [idPregunta, { pregunta, alternativas }] of Object.entries(dataByQuestion)) {
+            doc.fontSize(14).text(`Pregunta: ${pregunta}`, { underline: true });
+            doc.moveDown(0.5);
+
+            // Crear gráfica de pastel
+            const canvas = createCanvas(400, 400);
+            const ctx = canvas.getContext('2d');
+
+            const total = alternativas.reduce((sum, alt) => sum + alt.coincidencias, 0);
+            let startAngle = 0;
+
+            alternativas.forEach((alt, index) => {
+                const sliceAngle = (alt.coincidencias / total) * 2 * Math.PI;
+
+                // Colores alternativos para las secciones
+                ctx.fillStyle = `hsl(${(index * 360) / alternativas.length}, 70%, 70%)`;
+                ctx.beginPath();
+                ctx.moveTo(200, 200);
+                ctx.arc(200, 200, 200, startAngle, startAngle + sliceAngle);
+                ctx.closePath();
+                ctx.fill();
+
+                startAngle += sliceAngle;
+            });
+
+            // Agregar leyenda
+            alternativas.forEach((alt, index) => {
+                ctx.fillStyle = `hsl(${(index * 360) / alternativas.length}, 70%, 70%)`;
+                ctx.fillRect(410, 20 + index * 20, 10, 10);
+
+                ctx.fillStyle = '#000';
+                ctx.font = '16px Arial';
+                ctx.fillText(`${alt.descripcion} (${alt.coincidencias})`, 430, 30 + index * 20);
+            });
+
+            const imageBuffer = canvas.toBuffer();
+            doc.image(imageBuffer, { fit: [400, 400], align: 'center' });
+            doc.moveDown(1);
+        }
+
+        doc.end();
+    } catch (error) {
+        console.error('Error al generar el reporte estadístico:', error);
+        res.status(500).json({ error: 'Error interno al generar el reporte estadístico.' });
+    }
+}); */
 
 //obtiene id transcripcion
 app.get('/api/proyecto/:idProyecto/transcripcion', async (req, res) => {

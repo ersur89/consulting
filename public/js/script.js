@@ -1759,11 +1759,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="project-grid-cell">${cuestionario.generado}</div>
                             <div class="project-grid-cell">${cuestionario.estado}</div>
                             <div class="project-grid-cell">
-                                <button class="edit-button">
+                                <button class="edit-button" title="Editar">
                                     <i class="fas fa-edit"></i>
                                 </button>
                                 <button class="print-button" title="Imprimir">
                                     <i class="fas fa-print"></i>
+                                </button>
+                                <button class="stadistic-button" title="Estadistica">
+                                    <i class="fas fa-chart-pie"></i>
                                 </button>
                             </div>
                         </div>
@@ -1918,6 +1921,71 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         });
+
+        document.querySelectorAll('.stadistic-button').forEach((button) => {
+            button.addEventListener('click', async (e) => {
+                const projectRow = e.target.closest('.project-grid-row');
+                const idProyecto = projectRow.dataset.projectId;
+                let idTranscripcion = "";
+        
+                try {
+                    // Mostrar indicador de carga (opcional)
+                    const loadingIndicator = document.getElementById('loading-indicator');
+                    if (loadingIndicator) {
+                        loadingIndicator.style.display = 'flex';
+                    }
+        
+                    // Consultar el ID de transcripción
+                    const transcripcionResponse = await fetch(`/api/proyecto/${idProyecto}/transcripcion`);
+                    if (!transcripcionResponse.ok) {
+                        if (loadingIndicator) {
+                            loadingIndicator.style.display = 'none';
+                        }
+                        throw new Error('Error al obtener el ID de la transcripción.');
+                    }
+        
+                    const transcripcionData = await transcripcionResponse.json();
+                    idTranscripcion = transcripcionData.idTranscripcion;
+        
+                    if (!idTranscripcion) {
+                        if (loadingIndicator) {
+                            loadingIndicator.style.display = 'none';
+                        }
+                        throw new Error('No se encontró un ID de transcripción asociado.');
+                    }
+        
+                    // Generar y descargar el PDF con estadísticas
+                    const response = await fetch(`/api/generar-estadisticas/${idProyecto}/${idTranscripcion}`);
+                    if (!response.ok) {
+                        if (loadingIndicator) {
+                            loadingIndicator.style.display = 'none';
+                        }
+                        throw new Error('Error al generar el reporte estadístico');
+                    }
+        
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `estadisticas_proyecto_${idProyecto}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+        
+                    if (loadingIndicator) {
+                        loadingIndicator.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('Error al generar el reporte estadístico:', error);
+                    showMessage(error.message || 'Error al generar el reporte estadístico.', 'error');
+                } finally {
+                    if (loadingIndicator) {
+                        loadingIndicator.style.display = 'none';
+                    }
+                }
+            });
+        });
+        
 
     }
 
