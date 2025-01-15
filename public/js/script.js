@@ -56,6 +56,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const userNameSpan = document.getElementById('user-name');
         userNameSpan.textContent = userInfo.name || 'Usuario Genérico';
+
+        // Verifica si el rol del usuario es 'user' y oculta el menú de administración
+        if (userInfo.role === 'user') {
+            // Ocultar el menú de administración
+            const adminMenu = document.querySelector('a[href="#admin"]');  // Enlace de administración
+            const adminSubmenu = document.querySelector('ul.submenu');  // Submenú de administración
+
+            if (adminMenu && adminSubmenu) {
+                adminMenu.closest('li').style.display = 'none';  // Oculta el bloque completo de administración
+            }
+        }
+
     } catch (error) {
         console.error('Error al obtener la información del usuario:', error);
         window.location.href = '/'; // Redirige al login si no está autenticado
@@ -66,6 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const menuCrear = document.getElementById('menu-inicio');
     const contentArea = document.getElementById('content-area');
 
+   
     if (menuCrear) {
         menuCrear.addEventListener('click', async (e) => {
             e.preventDefault();
@@ -916,9 +929,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     projectForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
         // Resetear mensajes de error
         document.querySelectorAll('.error-message').forEach((msg) => (msg.textContent = ''));
-
+         
         // Obtener valores
         const projectName = document.getElementById('project-name').value.trim();
         const clientName = document.getElementById('client-name').value.trim();
@@ -930,6 +944,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const status = document.getElementById('status').value.trim();
         let isValid = true;
 
+        console.log("validaciones");
         // Validar nombre del proyecto
         if (!projectName) {
             document.getElementById('error-project-name').textContent = 'El nombre del proyecto es obligatorio.';
@@ -989,7 +1004,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify(formData),
             })
                 .then((response) => {
-                    if (response.ok) {
+                    if (response.ok) {console.log("responde bien");
                         return response.json(); // Parsear JSON si el servidor responde con éxito
                     } else {
                         throw new Error('Error al crear el proyecto. Verifique los datos e intente nuevamente.');
@@ -997,7 +1012,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
                 .then((data) => {
                     // Mostrar mensaje de éxito o manejar la respuesta del servidor
+                    console.log("casi llega");
                     if (data.success) {
+                        console.log("llegò");
                         showMessage(data.message, 'success');
                         // Opcional: reiniciar el formulario
                         //document.getElementById('projectForm').reset();
@@ -1601,6 +1618,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     })
                                     .then((dataQuestions) => {
                                         console.log('Cuestionario guardado:', dataQuestions);
+                                        loadProjects();
                                         showMessage(dataQuestions.message || 'Cuestionario generado exitosamente.', 'success');
                                     })
                                     .catch((error) => {
@@ -1612,7 +1630,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 console.error('Error al guardar la transcripción:', error);
                                 showMessage('Error al guardar la transcripción.', 'error');
                             });
-                        console.log(dataGenerate.texto);
+                        //console.log(dataGenerate.texto);
                         await loadProjects();
                         showMessage('Preguntas generadas con éxito.', 'success');
                     } else {

@@ -5,11 +5,10 @@ const path = require('path');
 const bodyParser = require('body-parser');
 const { AssemblyAI } = require('assemblyai');
 const { CohereClientV2 } = require('cohere-ai'); 
-
 const { createCanvas } = require('canvas');
-//const Chart = require('chart.js');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
+const { Console } = require('console');
 
 const db = require(path.join(__dirname, 'config', 'db'));
 
@@ -53,6 +52,8 @@ function isAuthenticated(req, res, next) {
 app.get('/dashboard', isAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, '../public', 'dashboard.html'));
 });
+
+//
 
 // Ruta para validar el login
 app.post('/validate-login', async (req, res) => {
@@ -648,7 +649,7 @@ app.post('/api/proyectos', (req, res) => {
                 }
 
                 const clienteId = result.insertId;
-
+                Console.log("CAPTURA AL GRABAR ID PROYECTO",clienteId);
                 // Insertar proyecto asociado
                 insertarActualizarProyecto(clienteId);
             });
