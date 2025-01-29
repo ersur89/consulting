@@ -187,13 +187,14 @@ document.addEventListener('DOMContentLoaded', () => {
     
         contentArea.innerHTML = `
             <div class="table-header">
+                <button class="export-button">📥 Exportar a Excel</button>
                 <h2>Usuarios Registrados</h2>
                 <button class="create-button">CREAR NUEVO</button>
                 <div class="filters">
                     <select class="filter-select">
-                        <option value="">Todos</option>
-                        <option value="Activo">Activo</option>
+                        <option value="Activo" selected>Activo</option> <!-- Filtro por defecto -->
                         <option value="Inactivo">Inactivo</option>
+                        <option value="">Todos</option>
                     </select>
                     <input type="text" class="search-input" placeholder="Buscar Usuario" />
                     <button class="search-button">
@@ -220,6 +221,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('.create-button').addEventListener('click', () => {
             configureUserForm('create');
         });
+
+        document.querySelector('.export-button').addEventListener('click', exportToExcel);
     }
     
 
@@ -228,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let usuarios = [];
         const filterSelect  = document.querySelector('.filter-select');
         const contentAreaSub = document.querySelector('#contentAreaSub');
-        let filterValue = filterSelect ? filterSelect.value : ''; // Obtén el valor del filtro inicial
+        let filterValue = filterSelect ? filterSelect.value : 'Activo'; // Obtén el valor del filtro inicial
     
         try {
             const response = await fetch('/api/usuarios');
@@ -396,6 +399,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
             await loadUsuarios(searchTerm); // Recargar la lista de usuarios
         });
+    }
+
+    async function exportToExcel() {
+        try {
+            // Obtener todos los usuarios directamente del servidor
+            const response = await fetch('/api/usuarios');
+            if (!response.ok) throw new Error('Error al obtener los usuarios');
+            const usuarios = await response.json();
+    
+            // Crear estructura de datos para Excel
+            let tableData = [];
+            tableData.push(["Usuario", "Nombre", "Correo", "Estado"]);
+    
+            usuarios.forEach(user => {
+                tableData.push([
+                    user.usuario,
+                    user.nombre,
+                    user.correo,
+                    user.estado
+                ]);
+            });
+    
+            // Crear libro de Excel
+            let wb = XLSX.utils.book_new();
+            let ws = XLSX.utils.aoa_to_sheet(tableData);
+            XLSX.utils.book_append_sheet(wb, ws, "Usuarios");
+    
+            // Descargar archivo
+            XLSX.writeFile(wb, "Usuarios.xlsx");
+        } catch (error) {
+            console.error('Error al exportar:', error);
+            showMessage("Error al exportar los usuarios.", "error");
+        }
     }
 
     function setupSearchButton() {
@@ -700,13 +736,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         contentArea.innerHTML = `
             <div class="table-header">
+                <button class="export-button">📥 Exportar a Excel</button>
                 <h2>Proyectos Registrados</h2>
                 <button class="create-button">CREAR NUEVO</button>
                 <div class="filters">
                     <select class="filter-select">
-                        <option value="">Todos</option>
                         <option value="Activo">Activo</option>  
                         <option value="Cerrado">Cerrado</option>
+                        <option value="">Todos</option>
                     </select>
                     <input type="text" class="search-input" placeholder="Buscar Proyecto" />
                     <button class="search-button">
@@ -727,7 +764,7 @@ document.addEventListener('DOMContentLoaded', () => {
             loadProjects(searchTerm);
         });
 
-
+        document.querySelector('.export-button').addEventListener('click', exportToExcel);
     }
 
     async function loadProjects(searchTerm = '') {
@@ -735,7 +772,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const contentAreaSub = document.querySelector('#contentAreaSub');
         const filterSelect  = document.querySelector('.filter-select');
-        let filterValue = filterSelect ? filterSelect.value : ''; // Obtén el valor del filtro inicial
+        let filterValue = filterSelect ? filterSelect.value : 'ACTIVO'; // Obtén el valor del filtro inicial
  
 
         try {
@@ -892,6 +929,68 @@ document.addEventListener('DOMContentLoaded', () => {
         
     }
 
+    // Función para exportar a Excel
+    /* function exportToExcel() {
+        let tableData = [];
+        const rows = document.querySelectorAll('.project-grid-row');
+
+        // Agregar encabezados
+        tableData.push(["Nombre", "RUC", "Cliente", "Teléfono", "Correo", "Estado"]);
+
+        // Agregar datos de cada fila
+        rows.forEach(row => {
+            let rowData = [];
+            row.querySelectorAll(".project-grid-cell").forEach((cell, index) => {
+                if (index < 6) { // No incluir la columna de operaciones
+                    rowData.push(cell.innerText);
+                }
+            });
+            tableData.push(rowData);
+        });
+
+        // Crear libro de Excel
+        let wb = XLSX.utils.book_new();
+        let ws = XLSX.utils.aoa_to_sheet(tableData);
+        XLSX.utils.book_append_sheet(wb, ws, "Proyectos");
+
+        // Descargar archivo
+        XLSX.writeFile(wb, "Proyectos.xlsx");
+    } */
+    async function exportToExcel() {
+        try {
+            // Obtener todos los proyectos directamente del servidor
+            const response = await fetch('/api/proyectos');
+            if (!response.ok) throw new Error('Error al obtener los proyectos');
+            const projects = await response.json();
+    
+            // Crear la estructura de datos para Excel
+            let tableData = [];
+            tableData.push(["Nombre", "RUC", "Cliente", "Teléfono", "Correo", "Estado"]);
+    
+            projects.forEach(project => {
+                tableData.push([
+                    project.proyecto_nombre,
+                    project.cedula_ruc,
+                    project.cliente_nombre,
+                    project.telefono,
+                    project.correo,
+                    project.estado
+                ]);
+            });
+    
+            // Crear archivo Excel
+            let wb = XLSX.utils.book_new();
+            let ws = XLSX.utils.aoa_to_sheet(tableData);
+            XLSX.utils.book_append_sheet(wb, ws, "Proyectos");
+    
+            // Descargar archivo
+            XLSX.writeFile(wb, "Proyectos.xlsx");
+        } catch (error) {
+            console.error('Error al exportar:', error);
+            showMessage("Error al exportar los proyectos.", "error");
+        }
+    }
+        
     function setupSearchButton() {
         const searchButton = document.querySelector('.search-button');
         const searchInput = document.querySelector('.search-input');
@@ -1220,12 +1319,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         contentArea.innerHTML = `
             <div class="table-header">
+                <button class="export-button">📥 Exportar a Excel</button>
                 <h2>Registro de Videos a Proyectos </h2>
                 <div class="filters">
                     <select class="filter-select">
-                        <option value="">Todos</option>
                         <option value="Activo">Activo</option>  
                         <option value="Cerrado">Cerrado</option>
+                        <option value="">Todos</option>
                     </select>
                     <input type="text" class="search-input" placeholder="Buscar Proyecto" />
                     <button class="search-button">
@@ -1246,6 +1346,7 @@ document.addEventListener('DOMContentLoaded', () => {
             loadProjects(searchTerm);
         });
 
+        document.querySelector('.export-button').addEventListener('click', exportToExcel);
 
     }
 
@@ -1254,7 +1355,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const contentAreaSub = document.querySelector('#contentAreaSub');
         const filterSelect  = document.querySelector('.filter-select');
-        let filterValue = filterSelect ? filterSelect.value : ''; // Obtén el valor del filtro inicial
+        let filterValue = filterSelect ? filterSelect.value : 'ACTIVO'; // Obtén el valor del filtro inicial
  
 
         try {
@@ -1314,7 +1415,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div class="project-grid-cell">${project.cedula_ruc}</div>
                                 <div class="project-grid-cell">${project.cliente_nombre}</div>                                
                                 <div class="project-grid-cell">${project.estado}</div>
-                                <div class="project-grid-cell">${project.generado}</div>
+                                <div class="project-grid-cell">${project.generado === 'S' ? 'SI' : 'NO'}</div>
                                 <div class="project-grid-cell">
                                     <button class="genera-button" title="Generar" ${project.generado === 'S' ? 'disabled' : ''}>
                                         <i class="fas fa-file-alt" style="${project.generado === 'S' ? 'color: gray;' : ''}"></i>
@@ -1456,6 +1557,41 @@ document.addEventListener('DOMContentLoaded', () => {
         
     }
 
+    async function exportToExcel() {
+        try {
+            // Obtener todos los proyectos con videos directamente del servidor
+            const response = await fetch('/api/proyectos-videos');
+            if (!response.ok) throw new Error('Error al obtener los proyectos con videos');
+            const projects = await response.json();
+    
+            // Crear estructura de datos para Excel
+            let tableData = [];
+            tableData.push(["ID Proyecto", "Nombre", "RUC", "Cliente", "Estado", "Generado"]);
+    
+            projects.forEach(project => {
+                tableData.push([
+                    project.id_proyecto,
+                    project.proyecto_nombre,
+                    project.cedula_ruc,
+                    project.cliente_nombre,
+                    project.estado,
+                    project.generado === 'S' ? 'SI' : 'NO'
+                ]);
+            });
+    
+            // Crear libro de Excel
+            let wb = XLSX.utils.book_new();
+            let ws = XLSX.utils.aoa_to_sheet(tableData);
+            XLSX.utils.book_append_sheet(wb, ws, "Proyectos Videos");
+    
+            // Descargar archivo
+            XLSX.writeFile(wb, "Proyectos_Videos.xlsx");
+        } catch (error) {
+            console.error('Error al exportar:', error);
+            showMessage("Error al exportar los proyectos con videos.", "error");
+        }
+    }
+    
     function setupSearchButton() {
         const searchButton = document.querySelector('.search-button');
         const searchInput = document.querySelector('.search-input');
@@ -1760,7 +1896,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadCuestionarios(searchTerm = '') {
         const contentAreaSub = document.querySelector('#contentAreaSub');
         const filterSelect = document.querySelector('.filter-select'); // Asegúrate de que el filtro exista
-        let filterValue = filterSelect ? filterSelect.value : ''; // Obtén el valor del filtro inicial
+        let filterValue = filterSelect ? filterSelect.value : 'ACTIVO'; // Obtén el valor del filtro inicial
         let cuestionarios = [];
 
         try {
@@ -1808,7 +1944,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="project-grid-cell">${cuestionario.id_proyecto}</div>
                             <div class="project-grid-cell">${cuestionario.id_transcripcion}</div>
                             <div class="project-grid-cell">${cuestionario.proyecto_nombre}</div>
-                            <div class="project-grid-cell">${cuestionario.generado}</div>
+                            <div class="project-grid-cell">${cuestionario.generado === 'S' ? 'SI' : 'NO'}</div>
                             <div class="project-grid-cell">${cuestionario.estado}</div>
                             <div class="project-grid-cell">
                                 <button class="edit-button" title="Editar">
@@ -2057,13 +2193,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderCuestionarioStructure() {
         contentArea.innerHTML = `
             <div class="table-header">
+                <button class="export-button">📥 Exportar a Excel</button>
                 <h2>Cuestionarios Registrados</h2>
                 <!-- <button class="create-button">CREAR NUEVO</button> -->
                 <div class="filters">
                     <select class="filter-select">
-                        <option value="">Todos</option>
                         <option value="Activo">Activo</option>  
                         <option value="Cerrado">Cerrado</option>
+                        <option value="">Todos</option>
                     </select>
                     <input type="text" class="search-input" placeholder="Buscar Proyecto" />
                     <button class="search-button">
@@ -2074,9 +2211,43 @@ document.addEventListener('DOMContentLoaded', () => {
             <div id="contentAreaSub"></div> <!-- Tabla de cuestionarios -->
         `;
 
-
+        document.querySelector('.export-button').addEventListener('click', exportToExcel);
     }
 
+    async function exportToExcel() {
+        try {
+            // Obtener todos los cuestionarios directamente del servidor
+            const response = await fetch('/api/cuestionarios');
+            if (!response.ok) throw new Error('Error al obtener los cuestionarios');
+            const cuestionarios = await response.json();
+    
+            // Crear estructura de datos para Excel
+            let tableData = [];
+            tableData.push(["ID Proyecto", "ID Cuestionario", "Nombre Proyecto", "Generado", "Estado"]);
+    
+            cuestionarios.forEach(cuestionario => {
+                tableData.push([
+                    cuestionario.id_proyecto,
+                    cuestionario.id_transcripcion,
+                    cuestionario.proyecto_nombre,
+                    cuestionario.generado === 'S' ? 'SI' : 'NO',
+                    cuestionario.estado
+                ]);
+            });
+    
+            // Crear libro de Excel
+            let wb = XLSX.utils.book_new();
+            let ws = XLSX.utils.aoa_to_sheet(tableData);
+            XLSX.utils.book_append_sheet(wb, ws, "Cuestionarios");
+    
+            // Descargar archivo
+            XLSX.writeFile(wb, "Cuestionarios.xlsx");
+        } catch (error) {
+            console.error('Error al exportar:', error);
+            showMessage("Error al exportar los cuestionarios.", "error");
+        }
+    }
+    
     /* function openCuestionarioForm(mode, data) {
         const popupOverlay = document.getElementById('edit-cuestionario-popup');
         const questionTextInput = document.getElementById('question-text');
