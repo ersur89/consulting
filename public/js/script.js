@@ -293,9 +293,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <button class="edit-button">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <button class="delete-button">
+                                <!-- <button class="delete-button">
                                     <i class="fas fa-trash"></i>
-                                </button>
+                                </button> -->
                             </div>
                         </div>
                     `
@@ -636,6 +636,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        document.getElementById("ruc").addEventListener("input", function (e) {
+            this.value = this.value.replace(/\D/g, ""); // Elimina cualquier carácter que no sea un número
+        });
+
+        document.getElementById("phone").addEventListener("input", function (e) {
+            this.value = this.value.replace(/\D/g, ""); // Elimina cualquier carácter que no sea un número
+        });
+
         // Llenar los campos al seleccionar un cliente
         document.getElementById('ruc').addEventListener('change', (e) => {
             const selectedValue = e.target.value;
@@ -792,9 +800,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <button class="edit-button">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    <button class="delete-button">
+                                    <!-- <button class="delete-button">
                                         <i class="fas fa-trash"></i>
-                                    </button>
+                                    </button> -->
                                 </div>
                             </div>
                         `
@@ -944,7 +952,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const status = document.getElementById('status').value.trim();
         let isValid = true;
 
-        console.log("validaciones");
+        //console.log("validaciones");
         // Validar nombre del proyecto
         if (!projectName) {
             document.getElementById('error-project-name').textContent = 'El nombre del proyecto es obligatorio.';
@@ -952,8 +960,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Validar Cédula o RUC
-        if (!/^\d{10,13}$/.test(clientId)) {
+        /* if (!/^\d{10,13}$/.test(clientId)) {
             document.getElementById('error-ruc').textContent = 'La cédula o RUC debe contener entre 10 y 13 números.';
+            isValid = false;
+        } */
+        if (!/^(?:\d{10}|\d{13})$/.test(clientId)) {
+            document.getElementById('error-ruc').textContent = 'La cédula debe tener 10 dígitos o el RUC 13 dígitos.';
             isValid = false;
         }
 
@@ -981,6 +993,11 @@ document.addEventListener('DOMContentLoaded', () => {
             isValid = false;
         }
 
+        // Si hay errores, evitar que el formulario se envíe
+        if (!isValid) {
+            e.preventDefault(); // Solo previene el envío si hay errores
+            return;
+        }
         // Mostrar éxito si todos los campos son válidos
         if (isValid) {
             // Datos del formulario
@@ -1080,6 +1097,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 telefono: document.getElementById('phone').value.trim(),
                 correo: document.getElementById('email').value.trim(),
                 descripcion: document.getElementById('description').value.trim(),
+                estado: document.getElementById('status').value.trim(),
             };
         
             try {
@@ -1550,7 +1568,23 @@ document.addEventListener('DOMContentLoaded', () => {
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            content: `${transcriptText} Según el texto que tienes anteriormente puedes generarme las preguntas y las opciones de respuestas de manera ordenada y junto a las respuesta entre parentesis el numero de veces q se repitio.`,
+                            //content: `${transcriptText} Según el texto que tienes anteriormente puedes generarme las preguntas y las opciones de respuestas de manera ordenada y junto a las respuesta entre parentesis el numero de veces que se repitio.`,
+                            content: `${transcriptText} Según el texto que tienes anteriormente puedes generarme las preguntas y las opciones de respuestas. Cada pregunta debe seguir el siguiente formato:
+                                                        Debe estar numerada, por ejemplo:
+                                                        7. ¿Pregunta?
+                                                        Solo se toma las preguntas del cuestionario, no considerar preguntas de presentacion
+                                                        Cada pregunta debe tener un número variable de opciones de respuesta con el siguiente formato:
+
+                                                        - a) Primera opción. (el numero de las veces que las personas eligieron esta respuesta)
+                                                        - b) Segunda opción. (el numero de las veces que las personas eligieron esta respuesta)
+                                                        - c) Tercera opción. (el numero de las veces que las personas eligieron esta respuesta)
+                                                        - d) Cuarta opción. (el numero de las veces que las personas eligieron esta respuesta)
+                                                        - e) (Opcional) Quinta opción. (el numero de las veces que las personas eligieron esta respuesta)
+                                                        Las respuestas o alternativas nunca deben ir vacias si el orador no dice alternativas pueden tomarse los comentarios de 
+                                                        los que participan, pueden ser más o menos de cuatro, dependiendo de la complejidad de la pregunta.
+                                                        Las alternativas que redactes no se puden repetir, cada alternative debe ser unica.
+                                                        Cada respuesta debe incluir un número entre paréntesis al final, indicando cuántas veces se repitio (por defecto, coloca (0)).
+                                                        Procura validar que el numero de participantes totales sea igual a la suma de personas que eligieron las respuestas o alternativas`,
                         }),
                     });
     
