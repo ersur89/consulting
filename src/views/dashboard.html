@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulting</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+</head>
+<body>
+    <div id="menu-toggle" class="menu-toggle">☰</div>
+
+    <div id="sidebar" class="sidebar">
+        <div class="profile-info">
+            <img src="leaf.jpg" alt="Profile" class="profile-img">
+            <p>Usuario</p>
+        </div>
+        <ul class="menu">
+            <li><a href="#" id="menu-inicio"><i class="fas fa-home"></i> <span class="menu-text">Home</span></a></li>
+            <li>
+                <a href="#"><i class="fas fa-folder"></i> <span class="menu-text">Proyectos</span></a>
+                <ul class="submenu">
+                    <li><a href="#" id="menu-proyecto"><i class="fas fa-plus"></i> <span class="menu-text">Gestionar Proyecto</span></a></li>
+                    <li><a href="#" id="menu-proyecto-video"><i class="fas fa-edit"></i> <span class="menu-text">Generar Cuestionario</span></a></li>
+                    <li><a href="#" id="menu-cuestionario"><i class="fas fa-file-alt"></i> <span class="menu-text">Cuestionario</span></a></li>
+                </ul>
+            </li>
+            <!-- <li>
+                <a href="#"><i class="fas fa-chart-bar"></i> <span class="menu-text">Reportes</span></a>
+                <ul class="submenu">
+                    <li><a href="#"><i class="fas fa-print"></i> <span class="menu-text">Imprimir Cuestionario</span></a></li>
+                    <li><a href="#"><i class="fas fa-database"></i> <span class="menu-text">Resumen de Datos</span></a></li>
+                </ul>
+                
+            </li> -->
+            <li>
+                <a href="#admin" ><i class="fas fa-user-cog"></i> <span class="menu-text">Administracion</span></a>
+                <ul class="submenu">
+                    <li><a href="#" id="menu-admin"><i class="fas fa-plus"></i> <span class="menu-text">Crear Usuario</span></a></li>
+                </ul>
+                
+            </li>
+            <li><a href="#" id="logout"><i class="fas fa-sign-out-alt"></i> <span class="menu-text">Salir</span></a></li>
+        </ul>
+    </div>
+
+    <div class="content" id="content-area">
+        <h1>Bienvenido, <span id="user-name">Usuario Genérico</span></h1>
+        <p>Inicio.</p>
+    </div>
+
+    <div id="custom-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Mensaje</h3>
+            </div>
+            <div class="modal-body">
+                <img src="/img/info-icon.png" alt="Icono" class="modal-icon" id="modal-icon">
+                <p id="modal-message">Este es un mensaje de advertencia o información.</p>
+            </div>
+            <div class="modal-actions">
+                <button id="accept-button" class="button">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="user-popup" class="popup-overlay">
+        <div class="popup-content">
+            <div class="popup-header">
+                <h3>Mantenimiento de Usuario</h3>
+                <button class="close-popup" id="close-popup">&times;</button>
+            </div>
+            <form id="user-form" method="POST">
+                <div class="popup-body">
+                    <label for="username">Usuario:</label>
+                    <input type="text" id="username" name="username" placeholder="Ingresa el usuario" required />
+                    <span class="error-message" id="error-username"></span>
+
+                    <label for="password">clave:</label>
+                    <input type="password" id="password" name="password" placeholder="Ingresa el clave" required />
+                    <span class="error-message" id="error-password"></span>
+
+                    <label for="nombre">Nombre:</label>
+                    <input type="text" id="nombre" name="nombre" placeholder="Ingresa el nombre completo" required />
+                    <span class="error-message" id="error-name"></span>
+
+                    <label for="correo">Correo:</label>
+                    <input type="email" id="correo" name="correo" placeholder="Ingresa el correo electrónico" required />
+                    <span class="error-message" id="error-email"></span>
+
+                    <label for="permission">Permiso:</label>
+                    <select id="permission" name="permission" required>
+                        <option value="">Seleccione un permiso</option>
+                        <option value="user">Usuario</option>
+                        <option value="admin">Administrador</option>
+                    </select>
+                    <span class="error-message" id="error-permission"></span>
+
+                    <label for="estado">Estado:</label>
+                    <select id="estado" name="estado" required>
+                        <option value="Activo">ACTIVO</option>
+                        <option value="Inactivo">INACTIVO</option>
+                    </select>
+                    <span class="error-message" id="error-status"></span>
+
+                </div>
+                <div class="popup-footer">
+                    <button id="new-button" type="submit" style="display: none;" >Guardar</button>
+                    <button type="submit" id="update-button" style="display: none;">Actualizar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="project-popup" class="popup-overlay" style="display: none;">
+        <div class="popup-content">
+            <div class="popup-header">
+                <h3 id="project-popup-title">Mantenimiento de Proyecto</h3>
+                <button class="close-popup" id="close-project-popup">&times;</button>
+            </div>
+            <div class="popup-body">
+                <form id="project-form">
+                    <div class="input-group">
+                        <input type="hidden" id="project-id" value="">
+                        <label for="project-name">Nombre del Proyecto:</label>
+                        <input type="text" id="project-name" placeholder="Ingresa el nombre del proyecto" required />
+                        <span class="error-message" id="error-project-name"></span>
+                    </div>
+                    <div class="input-group">
+                        <label for="ruc">Cédula o RUC:</label>
+                        <input type="text" id="ruc" placeholder="Ingresa la cédula o RUC" list="ruc-suggestions" pattern="\d*" required />
+                        <datalist id="ruc-suggestions"></datalist>
+                        <span class="error-message" id="error-ruc"></span>
+                    </div>
+                    <div class="input-group">
+                        <label for="client-name">Nombre del Cliente:</label>
+                        <input type="text" id="client-name" placeholder="Ingresa el nombre del cliente" required />
+                        <span class="error-message" id="error-client-name"></span>
+                    </div>
+                    <div class="input-group">
+                        <label for="address">Dirección:</label>
+                        <input type="text" id="address" placeholder="Ingresa la dirección" required />
+                        <span class="error-message" id="error-address"></span>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label for="phone">Teléfono:</label>
+                            <input type="text" id="phone" placeholder="Ingresa el teléfono" required />
+                            <span class="error-message" id="error-phone"></span>
+                        </div>
+                        <div class="input-group">
+                            <label for="email">Correo Electrónico:</label>
+                            <input type="email" id="email" placeholder="Ingresa el correo electrónico" required />
+                            <span class="error-message" id="error-email"></span>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="description">Descripción:</label>
+                        <textarea id="description" placeholder="Ingresa la descripción del proyecto"></textarea>
+                        <span class="error-message" id="error-description"></span>
+                    </div>
+                    <div class="input-group">
+                        <label for="status">Estado:</label>
+                        <select id="status">
+                            <option value="ACTIVO">ACTIVO</option>
+                            <option value="CERRADO">CERRADO</option>
+                        </select>
+                        <span class="error-message" id="error-status"></span>
+                    </div>
+                    <div class="popup-footer">
+                        <button type="submit" id="create-project-button" class="button">Guardar</button>
+                        <button id="update-project-button" type="submit" style="display: none;">Actualizar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="project-video-popup" class="popup-overlay" style="display: none;">
+        <div class="popup-content">
+            <div class="popup-header">
+                <h3 id="project-popup-title">Generacion de Cuestionario</h3>
+                <button class="close-popup" id="close-project-video-popup">&times;</button>
+            </div>
+            <div class="popup-body">
+                <form id="project-video-form" >
+                    <div class="input-group">
+                        <label for="id-proyect">Id Proyecto:</label>
+                        <input type="text" id="id-proyect"  required />
+                        <span class="error-message" id="error-id-proyect"></span>
+                    </div>
+                    <div class="input-group">
+                        <input type="hidden" id="project-id" value="">
+                        <label for="project-name">Nombre del Proyecto:</label>
+                        <input type="text" id="projecto-nombre" placeholder="Ingresa el nombre del proyecto" required />
+                        <span class="error-message" id="error-project-name"></span>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label for="ruc">Cédula o RUC:</label>
+                            <input type="text" id="ruc_cedula" placeholder="Ingresa la cédula o RUC" list="ruc-suggestions" required />
+                            <datalist id="ruc-suggestions"></datalist>
+                            <span class="error-message" id="error-ruc"></span>
+                        </div>
+                        <div class="input-group">
+                            <label for="client-name">Nombre del Cliente:</label>
+                            <input type="text" id="cliente-nombre" placeholder="Ingresa el nombre del cliente" required />
+                            <span class="error-message" id="error-client-name"></span>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="link">Enlace:</label>
+                        <input type="url" id="link" name="link" placeholder="Ingresa un enlace válido" required />
+                        <span class="error-message" id="error-link"></span>
+                    </div>
+                    <div id="loading-indicator" style="display: none;">
+                        <span class="loading-text">Loading<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></span>
+                    </div>
+                    <span class="error-message" id="error-proceso"></span>  
+                    <div class="popup-footer">
+                        <button type="submit" id="create-project-video-button" class="button">Generar</button>
+                    </div>
+                </form>
+                <div id="form-overlay" class="hiddens">
+                    <span id="overlay-message">Procesando<span class="loading-dots"></span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-cuestionario-popup" class="popup-overlay" style="display: none;">
+        <div class="popup">
+            <div class="popup-header">
+                <h3></h3>
+                <button class="close-popup"  id="close-button-cuestionario">&times;</button>
+            </div>
+            <div class="popup-content">
+                <h2 id="question-title">Editar Preguntas</h2>
+        
+                <!-- Formulario para la pregunta -->
+                <div class="question-section">
+                    <label for="question-description" id = "tittle-questions">
+                        Pregunta: <span id="question-order">(-)</span>
+                    </label>
+                    <textarea id="question-description" rows="3" placeholder="Ingrese la descripción de la pregunta"></textarea>
+                </div>
+        
+                <!-- Sección de alternativas -->
+                <div class="alternatives-section">
+                    <h3>Alternativas</h3>
+                    <div id="alternatives-container"></div>
+                    <button id="add-alternative-button" class="button add-button">Agregar Alternativa</button>
+                </div>
+        
+                <!-- Navegación de preguntas -->
+                <div class="navigation-section">
+                    <button id="prev-question-button" class="button nav-button">Pregunta Anterior</button>
+                    <button id="next-question-button" class="button nav-button">Pregunta Siguiente</button>
+                </div>
+        
+                <!-- Guardar cambios -->
+                <div class="save-section">
+                    <button id="close-cuestionario-button" class="button close-button">Cerrar</button>
+                    <button id="save-cuestionario-button" class="button save-button">Guardar Cambios</button>
+                </div>
+        
+                <!-- Botón de cierre -->
+                
+            </div>
+        </div>
+    </div>
+    
+    <div id="loading-indicator" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+        <div class="spinner"></div>
+        <p>Generando reporte...</p>
+    </div>
+    <div id="delete-popup" class="popup-overlay" style="display: none;">
+        <div class="popup-content-eli">
+            <h3>¿Está seguro de que desea eliminar este <span id="delete-entity">usuario</span>?</h3>
+            <p>Esta acción no se puede deshacer.</p>
+            <button id="confirm-delete" class="confirm-button">Eliminar</button>
+            <button id="cancel-delete" class="cancel-button">Cancelar</button>
+        </div>
+    </div>
+
+    <script src="js/script.js"></script>
+
+
+</body>
+</html>

@@ -37,7 +37,7 @@ app.use(
 
 // Ruta para el formulario de login
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public', 'index.html'));
+    res.sendFile(path.join(__dirname, '/views', 'index.html'));
 });
 
 function isAuthenticated(req, res, next) {
@@ -50,7 +50,7 @@ function isAuthenticated(req, res, next) {
 
 // Ruta para el dashboard
 app.get('/dashboard', isAuthenticated, (req, res) => {
-    res.sendFile(path.join(__dirname, '../public', 'dashboard.html'));
+    res.sendFile(path.join(__dirname, '/views', 'dashboard.html'));
 });
 
 //
@@ -649,7 +649,7 @@ app.post('/api/proyectos', (req, res) => {
                 }
 
                 const clienteId = result.insertId;
-                Console.log("CAPTURA AL GRABAR ID PROYECTO",clienteId);
+                //Console.log("CAPTURA AL GRABAR ID PROYECTO",clienteId);
                 // Insertar proyecto asociado
                 insertarActualizarProyecto(clienteId);
             });
@@ -700,7 +700,7 @@ app.post('/api/proyectos', (req, res) => {
 // Actualizar un proyecto existente
 app.put('/api/proyectos/:idProyecto', (req, res) => {
     const { idProyecto } = req.params;
-    const { nombreProyecto, descripcion, rucCedula, nombreCliente, direccion, telefono, correo } = req.body;
+    const { nombreProyecto, descripcion, rucCedula, nombreCliente, direccion, telefono, correo , estado} = req.body;
 
     if (!idProyecto || !rucCedula || !nombreCliente || !nombreProyecto) {
         return res.status(400).json({ message: "ID del proyecto, Cédula/RUC, nombre del cliente y nombre del proyecto son obligatorios." });
@@ -754,10 +754,10 @@ app.put('/api/proyectos/:idProyecto', (req, res) => {
         function actualizarProyecto(clienteId) {
             const updateProyecto = `
                 UPDATE com_proyecto
-                SET nombre = ?, descripcion = ?, id_cliente = ?
+                SET nombre = ?, descripcion = ?, id_cliente = ?, estado = ?
                 WHERE id_proyecto = ?
             `;
-            db.query(updateProyecto, [nombreProyecto, descripcion, clienteId, idProyecto], (err) => {
+            db.query(updateProyecto, [nombreProyecto, descripcion, clienteId, estado, idProyecto], (err) => {
                 if (err) {
                     console.error('Error al actualizar proyecto:', err);
                     return res.status(500).json({ message: "Error al actualizar proyecto." });
@@ -966,7 +966,7 @@ app.post('/transcribe', async (req, res) => {
     }
 });
 
-//Crea registro em transcripcion
+//Crea registro de transcripcion
 
 app.post('/save-transcription', (req, res) => {
     const { idProyecto, texto } = req.body;
@@ -1057,8 +1057,8 @@ function procesarPreguntasYRespuestas(jsonContent, idProyecto, idTranscripcion) 
 
     lineas.forEach((linea, index) => {
         const preguntaMatch = linea.match(/^\d+\.\s(.+)/); // Detectar preguntas
-        const opcionMatch = linea.match(/^\s*-\s*[a-dA-D]\)\s*(.+?)\s*\((\d+)\)\s*$/); // Detectar opciones con coincidencias
-
+        //const opcionMatch = linea.match(/^\s*-\s*([a-dA-D])\)\s*(.+?)\s*\((\d+)\)\s*$/);
+        const opcionMatch = linea.match(/^\s*-\s*\(?([a-d])\)?\)\s*(.+?)\s*\((\d+)\)\s*$/); // Detectar opciones con coincidencias
         
         if (preguntaMatch) {
             // Si es una pregunta, guardar la anterior y empezar una nueva
@@ -1076,7 +1076,7 @@ function procesarPreguntasYRespuestas(jsonContent, idProyecto, idTranscripcion) 
         } else if (opcionMatch && preguntaActual) {
             // Si es una opción, agregarla a la pregunta actual
             //console.log("Alternativa:", opcionMatch);
-            const [, descripcion, coincidencias] = opcionMatch;
+            const [,, descripcion, coincidencias] = opcionMatch;
             preguntaActual.opciones.push({
                 idProyecto,
                 idTranscripcion,
