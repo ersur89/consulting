@@ -10,6 +10,8 @@ const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const { Console } = require('console');
 
+const RedisStore = require('connect-redis')(session);
+
 const db = require(path.join(__dirname, 'config', 'db'));
 
 const app = express();
@@ -21,18 +23,32 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json()); // Asegúrate de manejar JSON en el servidor
 
+// Configuración del almacén de sesiones en MySQL
+const sessionStore = new MySQLStore({
+    host: process.env.DB_HOST, 
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT || 3306
+});
 
+app.use(session({
+    secret: 'miClaveSecreta',  // Cámbialo por algo seguro
+    resave: false,
+    saveUninitialized: false,
+    store: sessionStore
+}));
 
 
 //
-app.use(
+/* app.use(
     session({
         secret: 'C1AvE@4202', // Cambia esta clave por algo seguro
         resave: false,
         saveUninitialized: false,
         cookie: { secure: true }, // Cambia a `true` si usas HTTPS
     })
-);
+); */
 
 
 
