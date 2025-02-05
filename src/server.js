@@ -10,7 +10,7 @@ const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const { Console } = require('console');
 
-const RedisStore = require('connect-redis')(session);
+const MySQLStore = require('express-mysql-session')(session);
 
 const db = require(path.join(__dirname, 'config', 'db'));
 
