@@ -6,12 +6,12 @@ const mysql = require('mysql2');
     password: 'root',
     database: 'consulting',
 }); */
-const connection = mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    port: process.env.DB_PORT || 3306,
+const db = mysql.createConnection({
+    host: 'p3plzcpnl508852.prod.phx3.secureserver.net',
+    user: 'aplicacion',
+    password: '}7B%7ge4WGZ5',
+    database: 'consulting',
+    port: 3306,
 });
 
 db.connect((err) => {
