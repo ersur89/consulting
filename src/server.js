@@ -30,7 +30,7 @@ app.use(
         secret: 'C1AvE@4202', // Cambia esta clave por algo seguro
         resave: false,
         saveUninitialized: false,
-        cookie: { secure: false }, // Cambia a `true` si usas HTTPS
+        cookie: { secure: true }, // Cambia a `true` si usas HTTPS
     })
 );
 
