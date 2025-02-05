@@ -9,6 +9,7 @@ const { createCanvas } = require('canvas');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const { Console } = require('console');
+const cors = require('cors'); 
 
 const db = require(path.join(__dirname, 'config', 'db'));
 
@@ -16,6 +17,7 @@ const app = express();
 const PORT = 3000;
 
 // Middleware
+app.use(cors()); // Permite solicitudes desde el frontend
 app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json()); // Asegúrate de manejar JSON en el servidor
