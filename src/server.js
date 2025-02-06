@@ -24,13 +24,21 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json()); // Asegúrate de manejar JSON en el servidor
 
 // Configuración del almacén de sesiones en MySQL
-const sessionStore = new MySQLStore({
+/* const sessionStore = new MySQLStore({
     host: process.env.DB_HOST, 
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
     port: process.env.DB_PORT || 3306
-});
+}); */
+
+const sessionStore = new MySQLStore({
+    host: 'localhost',
+    user: 'root',
+    password: 'root',
+    database: 'consulting',
+    port: process.env.DB_PORT || 3306
+}); 
 
 app.use(session({
     secret: 'miClaveSecreta',  // Cámbialo por algo seguro
@@ -57,12 +65,13 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/views', 'index.html'));
 });
 
+
 function isAuthenticated(req, res, next) {
+    //console.log('Contenido de la sesión:', req.session);
     if (req.session.user) {
         return next();
     }
-    // Redirigir al inicio de sesión si no está autenticado
-    res.redirect('/'); // Ajusta la ruta '/login' a la URL de tu pantalla de inicio de sesión
+    res.redirect('/'); // O la ruta que corresponda al login
 }
 
 // Ruta para el dashboard
