@@ -1,6 +1,6 @@
 const mysql = require('mysql2');
 
-/* const pool = mysql.createPool({
+const pool = mysql.createPool({
     host: 'p3plzcpnl508852.prod.phx3.secureserver.net',
     user: 'aplicacion',
     password: '}7B%7ge4WGZ5',
@@ -9,9 +9,9 @@ const mysql = require('mysql2');
     waitForConnections: true, // Espera a que haya conexiones disponibles
     connectionLimit: 10,      // Máximo número de conexiones simultáneas
     queueLimit: 0   
-}); */
+});
 
-const pool = mysql.createPool({
+/* const pool = mysql.createPool({
     host: 'localhost',
     user: 'root',
     password: 'root',
@@ -19,7 +19,7 @@ const pool = mysql.createPool({
     waitForConnections: true, // Espera a que haya conexiones disponibles
     connectionLimit: 10,      // Máximo número de conexiones simultáneas
     queueLimit: 0             // Sin límite en la cola de peticiones
-});
+}); */
 
 
 
