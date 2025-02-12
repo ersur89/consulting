@@ -1,5 +1,4 @@
-//const mysql = require('mysql2');
-const mysql = require('mysql2/promise');
+const mysql = require('mysql2');
 
 const pool = mysql.createPool({
     host: 'p3plzcpnl508852.prod.phx3.secureserver.net',
