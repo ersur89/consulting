@@ -2240,17 +2240,16 @@ app.put('/api/cuestionarios/:idProyecto/:idCuestionario', async (req, res) => {
 app.put('/api/cuestionarios/:idProyecto/:idCuestionario', async (req, res) => {
     const { idProyecto, idCuestionario } = req.params;
     const cuestionario = req.body;
-
+    
     if (!idProyecto || !idCuestionario || !Array.isArray(cuestionario)) {
         return res.status(400).json({ error: 'Datos inválidos o incompletos.' });
     }
 
     let connection;
     try {
-        // Obtener conexión desde el pool
-        connection = await db.getConnection();
-
-        // Iniciar transacción
+        // Obtener una conexión individual del pool usando la interfaz de promesas
+        connection = await db.promise().getConnection();
+        // Iniciar la transacción sobre esa conexión
         await connection.beginTransaction();
 
         for (const pregunta of cuestionario) {
@@ -2279,29 +2278,29 @@ app.put('/api/cuestionarios/:idProyecto/:idCuestionario', async (req, res) => {
                         idProyecto,
                         idCuestionario,
                         pregunta.id_pregunta,
-                        alternativa.id_alternativa || alternativa.orden, // Fallback en caso de no tener ID
+                        alternativa.id_alternativa || alternativa.orden, // Usa el ID o el orden como fallback
                         alternativa.orden,
                         alternativa.descripcion,
-                        alternativa.coincidencias || 0, // Default 0 si no hay coincidencias
+                        alternativa.coincidencias || 0
                     ]
                 );
             }
         }
 
-        // Confirmar transacción
+        // Confirmar la transacción
         await connection.commit();
-        connection.release(); // Liberar conexión al pool
-
         res.status(200).json({ message: 'Cuestionario actualizado correctamente.' });
     } catch (error) {
+        // En caso de error, revertir la transacción (rollback)
+        if (connection) await connection.rollback();
         console.error('Error al actualizar el cuestionario, transacción revertida:', error);
-        if (connection) {
-            await connection.rollback();
-            connection.release();
-        }
         res.status(500).json({ error: 'Error interno al actualizar el cuestionario.' });
+    } finally {
+        // Liberar la conexión de vuelta al pool
+        if (connection) connection.release();
     }
 });
+
 
 
 // Iniciar el servidor
