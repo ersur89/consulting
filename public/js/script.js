@@ -1686,8 +1686,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
     
                 if (!responseTranscribe.ok) {
-                    const errorData = await responseTranscribe.json();
-                    throw new Error(errorData.error || 'Error al transcribir el audio.');
+                    overlay.classList.add('hiddens');
+                    loadingIndicator.style.display = 'none';
+                    let errorData;
+                    try {
+                        errorData = await responseTranscribe.json();
+                        console.log("Error data (JSON):", errorData);
+                    } catch (jsonError) {
+                        // Si no se puede parsear como JSON, lee el cuerpo como texto
+                        errorData = await responseTranscribe.text();
+                        console.log("Error data (texto):", errorData);
+                    }
+                    //const errorData = await responseTranscribe.json();
+                    //throw new Error(errorData.error || 'Error al transcribir el audio.');
+                    throw new Error( 'Error al transcribir el audio.' + errorData.message);
                 }
     
                 const dataTranscribe = await responseTranscribe.json();
